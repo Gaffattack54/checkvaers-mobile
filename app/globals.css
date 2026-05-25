@@ -2,26 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* shadcn tokens, tuned to the CheckVAERS palette */
+    /* Brand cyan #29C5F6 ≈ hsl(195 92% 56%); navy #0B1B3B ≈ hsl(222 70% 14%) */
+    --background: 0 0% 100%;
+    --foreground: 222 70% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 70% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 70% 14%;
+
+    --primary: 195 92% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 70% 14%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 42%;
+
+    --accent: 195 92% 95%;
+    --accent-foreground: 222 70% 14%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 195 92% 56%;
+
+    --radius: 0.75rem;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  /* Disable scroll bounce / form-zoom quirks on iOS */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* Safe-area helpers for bottom tab bar */
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  }
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
