@@ -64,8 +64,8 @@ continuing. Current state (update as you go):
 - [x] **7.** Learn tab content
 - [x] **8.** Report tab flow
 - [x] **9.** History tab + IndexedDB
-- [ ] **10.** Real data pipeline (`prepare-vaers-data.ts` + R2 + cache) ← **decision point**
-- [ ] **11.** PWA (manifest, icons, service worker, offline)
+- [x] **10.** Real data pipeline (code complete; awaiting host upload)
+- [ ] **11.** PWA (manifest, icons, service worker, offline) ← **next**
 - [ ] **12.** Polish (animations, empty/error states, a11y)
 - [ ] **13.** README + MIGRATION.md
 
@@ -128,8 +128,30 @@ Dexie + IndexedDB. Two tables, lazy-initialized so SSR never touches it:
   tab's interactive checklist + free-text notes auto-save on toggle /
   on blur. "Reset checklist" deletes the row.
 
-Repo wrappers (`checksRepo`, `reportRepo`) live in `lib/storage/db.ts` —
-keep direct `getDb()` usage out of components.
+Repo wrappers (`checksRepo`, `reportRepo`, `dataCacheRepo`) live in
+`lib/storage/db.ts` — keep direct `getDb()` usage out of components.
+
+## Real data pipeline (Step 10) — status: code complete, hosting deferred
+
+- `scripts/prepare-vaers-data.ts` — Node CLI (run with
+  `npm run prepare:vaers`) that reads extracted VAERS CSVs from
+  `./vaers-raw/`, filters to COVID-19, joins on VAERS_ID, sorts, gzips
+  to `./dist/vaers-covid-7yr.json.gz`. Both dirs are gitignored.
+- `lib/vaers/data-loader.ts` — `useVaersData()` hook. Behavior:
+  - **`NEXT_PUBLIC_VAERS_DATA_URL` unset** → mock dataset, instant.
+  - **set + cache fresh (ETag match)** → cache, instant, offline-ok.
+  - **set + cache stale or absent** → HEAD-checks ETag, streams the
+    gzip, decompresses with `DecompressionStream`, parses, caches in
+    Dexie (`dataCacheRepo`), emits progress events.
+  - **Network failure** → cached snapshot if any; otherwise mock with
+    a non-blocking error message.
+- `/check/result` waits for the loader's "ready" (or "error with
+  fallback") before running the matcher. The download screen shows
+  progress only when actually downloading; matching-phase shows the
+  original "Searching VAERS database…" copy.
+- **To flip on real data:** drop the produced `.json.gz` on
+  Cloudflare R2 or attach to a GitHub Release, then set
+  `NEXT_PUBLIC_VAERS_DATA_URL` in `.env.local`. No code changes.
 
 ## Cross-device notes
 

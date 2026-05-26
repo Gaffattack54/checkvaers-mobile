@@ -2,29 +2,31 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RotateCcw, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCheckDraft } from "@/lib/state/check-store";
 import { checkDraftSchema } from "@/lib/validation/schemas";
 import { findMatches } from "@/lib/vaers/matcher";
-import { MOCK_VAERS_RECORDS } from "@/lib/vaers/mock-data";
 import { localDateFromIso, ageInYears } from "@/lib/vaers/dates";
+import { useVaersData, type VaersDataset } from "@/lib/vaers/data-loader";
 import type { MatchResult } from "@/lib/vaers/types";
 import { checksRepo } from "@/lib/storage/db";
 import { ExactMatchCard } from "@/components/result-cards/exact-match-card";
 import { PotentialMatchesList } from "@/components/result-cards/potential-matches-list";
 import { NoMatchCard } from "@/components/result-cards/no-match-card";
 
-type Status =
-  | { kind: "loading" }
+type Phase =
+  | { kind: "waiting-for-data" }
+  | { kind: "matching" }
   | { kind: "invalid" }
-  | { kind: "ready"; result: MatchResult };
+  | { kind: "ready"; result: MatchResult; dataset: VaersDataset; note?: string };
 
 export default function ResultPage() {
   const router = useRouter();
   const draft = useCheckDraft();
   const reset = useCheckDraft((s) => s.reset);
-  const [status, setStatus] = useState<Status>({ kind: "loading" });
+  const loader = useVaersData();
+  const [phase, setPhase] = useState<Phase>({ kind: "waiting-for-data" });
 
   const parsed = useMemo(() => {
     const r = checkDraftSchema.safeParse({
@@ -36,18 +38,35 @@ export default function ResultPage() {
     return r.success ? r.data : null;
   }, [draft.state, draft.sex, draft.dob, draft.doseDates]);
 
+  // Once both the draft is valid AND the dataset is available, run the match.
   useEffect(() => {
     if (!parsed) {
-      setStatus({ kind: "invalid" });
+      setPhase({ kind: "invalid" });
       return;
     }
-    // NOTE: We run the matcher inline against the 50-record mock dataset.
-    // Step 10 swaps in the real ~100k-record snapshot, at which point this
-    // should move into a Web Worker. The short artificial delay keeps the
-    // UI honest about "we did work" and avoids a flash of result content.
+
+    // Wait until the loader reports a ready dataset (or an error with a
+    // fallback, which still gives us records to match against).
+    let dataset: VaersDataset | null = null;
+    let note: string | undefined;
+    if (loader.kind === "ready") {
+      dataset = loader.data;
+    } else if (loader.kind === "error" && loader.fallback) {
+      dataset = loader.fallback;
+      note = loader.message;
+    } else {
+      setPhase({ kind: "waiting-for-data" });
+      return;
+    }
+
+    setPhase({ kind: "matching" });
+
+    // NOTE: matching still runs on the main thread. Cheap on 50 mock records,
+    // acceptable on tens-of-thousands. Move to a Web Worker if the real
+    // snapshot ever pushes per-match latency above ~50ms (see CLAUDE.md).
     let cancelled = false;
     const t = setTimeout(() => {
-      if (cancelled) return;
+      if (cancelled || !dataset) return;
       const ageYears = ageInYears(parsed.dob);
       const result = findMatches(
         {
@@ -56,11 +75,9 @@ export default function ResultPage() {
           ageYears,
           vaccineDates: parsed.doseDates.map(localDateFromIso),
         },
-        MOCK_VAERS_RECORDS
+        dataset.records
       );
-      setStatus({ kind: "ready", result });
-      // Fire-and-forget: persist to History. Silent on failure — IndexedDB
-      // can be unavailable (private mode, quota exceeded, SSR cache thaw).
+      setPhase({ kind: "ready", result, dataset, note });
       checksRepo
         .create(
           {
@@ -80,13 +97,13 @@ export default function ResultPage() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [parsed]);
+  }, [parsed, loader]);
 
-  if (status.kind === "loading") {
-    return <LoadingState />;
+  if (phase.kind === "waiting-for-data" || phase.kind === "matching") {
+    return <LoadingState loader={loader} phase={phase.kind} />;
   }
 
-  if (status.kind === "invalid") {
+  if (phase.kind === "invalid") {
     return (
       <div className="flex flex-1 flex-col px-6 pt-12 pb-32">
         <h1 className="text-2xl font-black text-brand-navy">
@@ -108,15 +125,24 @@ export default function ResultPage() {
     );
   }
 
-  const { result } = status;
+  const { result, dataset, note } = phase;
   return (
     <div className="flex flex-1 flex-col px-6 pt-6 pb-32">
       <h1 className="text-2xl font-black tracking-tight text-brand-navy">
         Your VAERS check
       </h1>
       <p className="mt-1 text-xs text-muted-foreground">
-        Searched the public COVID-19 VAERS snapshot. No data left your device.
+        Searched a {dataset.source === "mock" ? "sample" : "live"} snapshot
+        of {dataset.records.length.toLocaleString()} COVID-19 VAERS reports
+        ({dataset.yearStart}–{dataset.yearEnd}). No data left your device.
       </p>
+
+      {note ? (
+        <div className="mt-3 flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-xs text-destructive">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{note}</span>
+        </div>
+      ) : null}
 
       <div className="mt-6 space-y-6">
         {result.exact.length > 0 ? (
@@ -162,7 +188,19 @@ export default function ResultPage() {
   );
 }
 
-function LoadingState() {
+function LoadingState({
+  loader,
+  phase,
+}: {
+  loader: ReturnType<typeof useVaersData>;
+  phase: "waiting-for-data" | "matching";
+}) {
+  const isDownloading = loader.kind === "loading" && phase === "waiting-for-data";
+  const progress =
+    loader.kind === "loading" && loader.progress != null
+      ? Math.round(loader.progress * 100)
+      : null;
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 pb-24 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan">
@@ -170,12 +208,30 @@ function LoadingState() {
       </div>
       <div className="mt-6 flex items-center gap-2 text-brand-navy">
         <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-        <span className="text-base font-semibold">Searching VAERS database…</span>
+        <span className="text-base font-semibold">
+          {isDownloading
+            ? "Downloading VAERS database…"
+            : "Searching VAERS database…"}
+        </span>
       </div>
       <p className="mt-2 text-balance text-sm text-muted-foreground">
-        Comparing your details against COVID-19 reports from the last 7 years,
-        right here on your device.
+        {isDownloading
+          ? "One-time download. Subsequent checks work offline."
+          : "Comparing your details against COVID-19 reports, right here on your device."}
       </p>
+      {progress != null ? (
+        <div
+          className="mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-muted"
+          aria-label={`Download progress: ${progress}%`}
+          role="progressbar"
+          aria-valuenow={progress}
+        >
+          <div
+            className="h-full bg-brand-cyan transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

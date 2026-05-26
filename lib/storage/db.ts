@@ -4,6 +4,23 @@ import Dexie, { type Table } from "dexie";
 import type { VaersRecord, Sex, MatchResult } from "@/lib/vaers/types";
 
 /**
+ * Cached copy of the downloaded VAERS snapshot. Single-row pattern keyed by
+ * `id="vaers"`; we replace it wholesale when a new ETag is seen. Stored as
+ * already-parsed records (not gzipped bytes) so the result page doesn't
+ * re-parse on every nav.
+ */
+export interface CachedVaersData {
+  id: string;
+  etag: string | null;
+  generatedAt: string;
+  source: string;
+  yearStart: number;
+  yearEnd: number;
+  records: VaersRecord[];
+  cachedAt: number;
+}
+
+/**
  * Inputs the user supplied for a check, preserved for history display.
  * Stored as strings everywhere so they round-trip through IndexedDB without
  * the Date-serialization games.
@@ -54,13 +71,20 @@ export interface ReportDraft {
 class CheckVaersDb extends Dexie {
   checks!: Table<SavedCheck, string>;
   reports!: Table<ReportDraft, string>;
+  dataCache!: Table<CachedVaersData, string>;
 
   constructor() {
     super("checkvaers");
+    // v1: checks + reports
     this.version(1).stores({
-      // Index by id (primary), and by createdAt for chronological queries.
       checks: "id, createdAt",
       reports: "id, updatedAt",
+    });
+    // v2: + dataCache (added in Step 10)
+    this.version(2).stores({
+      checks: "id, createdAt",
+      reports: "id, updatedAt",
+      dataCache: "id, cachedAt",
     });
   }
 }
@@ -119,6 +143,25 @@ export const checksRepo = {
   },
   async clear(): Promise<void> {
     await getDb().checks.clear();
+  },
+};
+
+const DATA_CACHE_ID = "vaers";
+
+export const dataCacheRepo = {
+  async get(): Promise<CachedVaersData | undefined> {
+    return getDb().dataCache.get(DATA_CACHE_ID);
+  },
+  async put(entry: Omit<CachedVaersData, "id" | "cachedAt">): Promise<void> {
+    const row: CachedVaersData = {
+      ...entry,
+      id: DATA_CACHE_ID,
+      cachedAt: Date.now(),
+    };
+    await getDb().dataCache.put(row);
+  },
+  async clear(): Promise<void> {
+    await getDb().dataCache.delete(DATA_CACHE_ID);
   },
 };
 

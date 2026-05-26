@@ -39,3 +39,7 @@ next-env.d.ts
 .claude/settings.local.json
 .claude/.credentials*
 
+# VAERS data prep (Step 10). Inputs and outputs are large and local-only.
+/vaers-raw/
+/dist/
+
