@@ -167,7 +167,11 @@ export default function ResultPage() {
 
       <p className="mt-8 rounded-xl bg-muted/60 p-3 text-balance text-center text-xs text-muted-foreground">
         This tool searches publicly available VAERS data. It is not a medical
-        diagnostic tool. Consult a healthcare provider for medical advice.
+        diagnostic tool. Consult a healthcare provider for medical advice.{" "}
+        <a href="/privacy" className="underline underline-offset-2">
+          Privacy
+        </a>
+        .
       </p>
 
       <div className="mt-6">

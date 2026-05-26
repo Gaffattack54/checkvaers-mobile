@@ -65,9 +65,13 @@ continuing. Current state (update as you go):
 - [x] **8.** Report tab flow
 - [x] **9.** History tab + IndexedDB
 - [x] **10.** Real data pipeline (code complete; awaiting host upload)
-- [ ] **11.** PWA (manifest, icons, service worker, offline) ← **next**
-- [ ] **12.** Polish (animations, empty/error states, a11y)
-- [ ] **13.** README + MIGRATION.md
+- [x] **11.** PWA (manifest, icons, service worker, offline)
+- [x] **12.** Polish (privacy page, first-launch disclaimer, a11y)
+- [x] **13.** README + MIGRATION.md
+
+**MVP CODE COMPLETE.** Remaining work before public launch is operational:
+upload the prepared data file and set `NEXT_PUBLIC_VAERS_DATA_URL`. See
+the data-pipeline section above and `README.md` for the recipe.
 
 When you finish a step, tick the box here and commit.
 
@@ -152,6 +156,27 @@ Repo wrappers (`checksRepo`, `reportRepo`, `dataCacheRepo`) live in
 - **To flip on real data:** drop the produced `.json.gz` on
   Cloudflare R2 or attach to a GitHub Release, then set
   `NEXT_PUBLIC_VAERS_DATA_URL` in `.env.local`. No code changes.
+
+## PWA (Step 11)
+
+- `app/manifest.ts` — Next.js native manifest at `/manifest.webmanifest`.
+- `public/sw.js` — hand-rolled service worker (no `next-pwa`; that
+  package is unmaintained and breaks with App Router). Strategy:
+  navigations → network-first w/ shell fallback; static assets → cache-
+  first; VAERS data file → cache-first (refresh logic lives in the
+  data-loader hook, not the SW).
+- `components/shared/sw-registrar.tsx` mounted in root layout; registers
+  only in production builds.
+- `public/icons/icon-source.svg` is the single source of truth — run
+  `npm run generate:icons` (uses `sharp`) to regenerate the PNG set.
+
+## Polish (Step 12)
+
+- `app/privacy/page.tsx` — standalone privacy doc, linked from the
+  bottom of `/check` and the result page disclaimer.
+- `components/shared/first-launch-disclaimer.tsx` — one-time dismissible
+  banner on the Check tab; stores ack in `localStorage`.
+- `prefers-reduced-motion` honored globally in `app/globals.css`.
 
 ## Cross-device notes
 
