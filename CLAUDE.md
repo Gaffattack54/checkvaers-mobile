@@ -56,10 +56,10 @@ Spec lays out 13 steps. After each one, **stop and let the user verify** before
 continuing. Current state (update as you go):
 
 - [x] **1.** Scaffold + Tailwind + shadcn + theme tokens
-- [ ] **2.** Bottom tab navigation shell (4 placeholder screens) ← **next**
-- [ ] **3.** Mock VAERS data (50 records)
-- [ ] **4.** Matching logic + unit tests
-- [ ] **5.** Check flow (steps 1–7) wired to mock data
+- [x] **2.** Bottom tab navigation shell (4 placeholder screens)
+- [x] **3.** Mock VAERS data (50 records)
+- [x] **4.** Matching logic + unit tests
+- [ ] **5.** Check flow (steps 1–7) wired to mock data ← **next**
 - [ ] **6.** Result screens (exact / potential / none)
 - [ ] **7.** Learn tab content
 - [ ] **8.** Report tab flow
@@ -74,12 +74,24 @@ When you finish a step, tick the box here and commit.
 ## Commands
 
 ```
-npm run dev      # start dev server (http://localhost:3000)
-npm run build    # production build — run before declaring a step done
-npm run start    # serve the production build
+npm run dev          # start dev server (http://localhost:3000)
+npm run build        # production build — run before declaring a step done
+npm run start        # serve the production build
+npm run test         # run Vitest suite once (CI mode)
+npm run test:watch   # Vitest in watch mode
 ```
 
 No lint script wired up yet (we scaffolded with `--no-eslint`).
+
+## Matcher contract (Step 4)
+
+`lib/vaers/matcher.ts → findMatches(input, records)`. **User-supplied
+`vaccineDates` must be local-midnight Date objects** (i.e. constructed via
+`new Date(y, m-1, d)`, not `new Date("YYYY-MM-DD")` which is UTC midnight).
+The form layer in Step 5 must convert `<input type="date">` values
+accordingly. Matcher uses `dateKeyFromLocal()` internally to extract local
+calendar fields, so as long as callers respect this contract, the matcher
+is timezone-agnostic.
 
 ## Cross-device notes
 
