@@ -59,9 +59,9 @@ continuing. Current state (update as you go):
 - [x] **2.** Bottom tab navigation shell (4 placeholder screens)
 - [x] **3.** Mock VAERS data (50 records)
 - [x] **4.** Matching logic + unit tests
-- [ ] **5.** Check flow (steps 1–7) wired to mock data ← **next**
-- [ ] **6.** Result screens (exact / potential / none)
-- [ ] **7.** Learn tab content
+- [x] **5.** Check flow (steps 1–7) wired to mock data
+- [x] **6.** Result screens (exact / potential / none)
+- [ ] **7.** Learn tab content ← **next**
 - [ ] **8.** Report tab flow
 - [ ] **9.** History tab + IndexedDB
 - [ ] **10.** Real data pipeline (`prepare-vaers-data.ts` + R2 + cache)
@@ -88,10 +88,32 @@ No lint script wired up yet (we scaffolded with `--no-eslint`).
 `lib/vaers/matcher.ts → findMatches(input, records)`. **User-supplied
 `vaccineDates` must be local-midnight Date objects** (i.e. constructed via
 `new Date(y, m-1, d)`, not `new Date("YYYY-MM-DD")` which is UTC midnight).
-The form layer in Step 5 must convert `<input type="date">` values
-accordingly. Matcher uses `dateKeyFromLocal()` internally to extract local
-calendar fields, so as long as callers respect this contract, the matcher
-is timezone-agnostic.
+The form layer respects this via `localDateFromIso()` in
+`lib/vaers/dates.ts`. As long as callers use that helper, the matcher is
+timezone-agnostic.
+
+## Check flow architecture (Steps 5–6)
+
+- Draft state lives in **Zustand** (`lib/state/check-store.ts`), persisted
+  to `sessionStorage` so a refresh mid-flow doesn't wipe inputs.
+- Routes: `/check` → `/check/state` → `/check/sex` → `/check/dob` →
+  `/check/doses` → `/check/review` → `/check/result`. The bottom tab bar
+  stays mounted throughout (the user can bail to Learn/Report/History at
+  any point — draft is preserved until they hit "Start a new check").
+- Validation is **Zod** (`lib/validation/schemas.ts`). Each step parses
+  its slice on submit; `/check/review` re-parses the whole draft before
+  enabling the "Check VAERS" CTA.
+- Dates flow as `YYYY-MM-DD` strings everywhere until the matcher call —
+  that's where `localDateFromIso()` is applied.
+
+### Matcher is still inline (not a Web Worker)
+
+The spec wanted matching to run in a Web Worker. With the 50-record mock
+dataset that's overkill — the match completes in well under a frame, and
+the artificial 700ms delay in `/check/result` is purely UX. **Move to a
+real Worker in Step 10**, once the real ~100k-record snapshot is loaded.
+The boundary is small: it's the `findMatches(input, records)` call inside
+the `useEffect` of `app/(tabs)/check/result/page.tsx`.
 
 ## Cross-device notes
 
