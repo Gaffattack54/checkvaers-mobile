@@ -10,6 +10,7 @@ import { findMatches } from "@/lib/vaers/matcher";
 import { MOCK_VAERS_RECORDS } from "@/lib/vaers/mock-data";
 import { localDateFromIso, ageInYears } from "@/lib/vaers/dates";
 import type { MatchResult } from "@/lib/vaers/types";
+import { checksRepo } from "@/lib/storage/db";
 import { ExactMatchCard } from "@/components/result-cards/exact-match-card";
 import { PotentialMatchesList } from "@/components/result-cards/potential-matches-list";
 import { NoMatchCard } from "@/components/result-cards/no-match-card";
@@ -47,16 +48,33 @@ export default function ResultPage() {
     let cancelled = false;
     const t = setTimeout(() => {
       if (cancelled) return;
+      const ageYears = ageInYears(parsed.dob);
       const result = findMatches(
         {
           state: parsed.state,
           sex: parsed.sex,
-          ageYears: ageInYears(parsed.dob),
+          ageYears,
           vaccineDates: parsed.doseDates.map(localDateFromIso),
         },
         MOCK_VAERS_RECORDS
       );
       setStatus({ kind: "ready", result });
+      // Fire-and-forget: persist to History. Silent on failure — IndexedDB
+      // can be unavailable (private mode, quota exceeded, SSR cache thaw).
+      checksRepo
+        .create(
+          {
+            state: parsed.state,
+            sex: parsed.sex,
+            dob: parsed.dob,
+            ageYears,
+            doseDates: parsed.doseDates,
+          },
+          result
+        )
+        .catch(() => {
+          /* non-fatal — history is best-effort */
+        });
     }, 700);
     return () => {
       cancelled = true;

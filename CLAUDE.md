@@ -61,10 +61,10 @@ continuing. Current state (update as you go):
 - [x] **4.** Matching logic + unit tests
 - [x] **5.** Check flow (steps 1–7) wired to mock data
 - [x] **6.** Result screens (exact / potential / none)
-- [ ] **7.** Learn tab content ← **next**
-- [ ] **8.** Report tab flow
-- [ ] **9.** History tab + IndexedDB
-- [ ] **10.** Real data pipeline (`prepare-vaers-data.ts` + R2 + cache)
+- [x] **7.** Learn tab content
+- [x] **8.** Report tab flow
+- [x] **9.** History tab + IndexedDB
+- [ ] **10.** Real data pipeline (`prepare-vaers-data.ts` + R2 + cache) ← **decision point**
 - [ ] **11.** PWA (manifest, icons, service worker, offline)
 - [ ] **12.** Polish (animations, empty/error states, a11y)
 - [ ] **13.** README + MIGRATION.md
@@ -114,6 +114,22 @@ the artificial 700ms delay in `/check/result` is purely UX. **Move to a
 real Worker in Step 10**, once the real ~100k-record snapshot is loaded.
 The boundary is small: it's the `findMatches(input, records)` call inside
 the `useEffect` of `app/(tabs)/check/result/page.tsx`.
+
+## Local persistence (Steps 8–9)
+
+Dexie + IndexedDB. Two tables, lazy-initialized so SSR never touches it:
+
+- `checks` — every completed check is fire-and-forget saved by
+  `/check/result`. Stored fields: input snapshot (state/sex/dob/age/dose
+  dates) + the full MatchResult. History list and `/history/[id]` detail
+  view both read from this. Errors are non-fatal (private-mode browsers,
+  quota issues).
+- `reports` — single-row pattern keyed by `id="current"`. The Report
+  tab's interactive checklist + free-text notes auto-save on toggle /
+  on blur. "Reset checklist" deletes the row.
+
+Repo wrappers (`checksRepo`, `reportRepo`) live in `lib/storage/db.ts` —
+keep direct `getDb()` usage out of components.
 
 ## Cross-device notes
 
