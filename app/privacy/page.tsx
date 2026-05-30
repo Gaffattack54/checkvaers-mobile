@@ -63,9 +63,29 @@ export default function PrivacyPage() {
           <p>
             CheckVAERS downloads a prepared snapshot of public VAERS
             COVID-19 reports (from vaers.hhs.gov) the first time you open
-            the app. Subsequent checks run against the cached copy — no
-            additional network calls are made to perform a check.
+            the app. The VAERS data we search is the public,
+            de-identified version published by the U.S. Department of
+            Health & Human Services. Subsequent checks run against the
+            cached copy — no additional network calls are made to
+            perform a check.
           </p>
+        </Block>
+
+        <Block title="Security in transit and on your device">
+          <ul className="ml-5 list-disc space-y-1">
+            <li>
+              All connections to CheckVAERS use HTTPS encryption.
+            </li>
+            <li>
+              The VAERS data snapshot is delivered over HTTPS and
+              verified against an upstream ETag before any update.
+            </li>
+            <li>
+              Your check details and saved history are kept in your
+              browser&apos;s on-device storage. They aren&apos;t
+              transmitted to a server.
+            </li>
+          </ul>
         </Block>
 
         <Block title="What CheckVAERS isn't">
