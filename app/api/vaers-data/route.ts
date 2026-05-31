@@ -19,11 +19,13 @@
 
 import { NextResponse } from "next/server";
 
-// Re-fetch from upstream at most once per 24h. Vercel caches the response
-// at the edge between revalidations — most users get a same-origin,
-// edge-cached response with no GitHub round trip.
-export const revalidate = 86400;
-export const dynamic = "force-static";
+// Always handle the request at runtime (don't try to pre-render the 70 MB
+// response into the build — Vercel's ISR cap is 19 MB).
+//
+// Vercel's CDN still caches based on the `Cache-Control` response header,
+// so first-after-revalidate request pays the upstream latency and
+// subsequent users hit the edge cache for 24h.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const source = process.env.VAERS_DATA_SOURCE_URL;
