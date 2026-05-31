@@ -16,3 +16,17 @@ export const CONTACT_EMAIL =
 export const REPO_URL =
   process.env.NEXT_PUBLIC_REPO_URL?.trim() ||
   "https://github.com/Gaffattack54/checkvaers-mobile";
+
+/**
+ * Build-time variant flag.
+ *
+ *  - `"site"` → render the rich marketing landing at `/`. Used by the
+ *              `checkvaers-site` Vercel project (eventually checkvaers.com).
+ *  - anything else (including unset) → render the minimal app landing.
+ *              Used by the `check-vaers` Vercel project (the app).
+ *
+ * Everything else in the codebase (the check flow, Learn, Report,
+ * History, etc.) is identical across variants.
+ */
+export const VARIANT =
+  process.env.NEXT_PUBLIC_VARIANT?.trim() === "site" ? "site" : "app";

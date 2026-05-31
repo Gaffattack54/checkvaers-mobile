@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { ShieldCheck, Lock, Database, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MarketingLanding } from "@/components/marketing/marketing-landing";
+import { VARIANT } from "@/lib/site-config";
 
 export default function HomePage() {
+  if (VARIANT === "site") return <MarketingLanding />;
+  return <AppLanding />;
+}
+
+function AppLanding() {
   return (
     <main className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pt-safe pb-safe">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-hex-pattern bg-repeat opacity-[0.04]" />
