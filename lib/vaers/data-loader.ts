@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { VaersRecord } from "./types";
 import { MOCK_VAERS_RECORDS, MOCK_VAERS_METADATA } from "./mock-data";
 import { dataCacheRepo, type CachedVaersData } from "@/lib/storage/db";
+import { indexByState, type RecordsByState } from "./matcher";
 
 /* ------------------------------------------------------------------ */
 /* Public API                                                         */
@@ -34,6 +35,25 @@ export function useVaersData(): LoaderStatus {
   }, []);
 
   return status;
+}
+
+/**
+ * Memoized state-grouped index of the loaded records.
+ *
+ * Building the Map is O(N) — fine to do once when the dataset becomes
+ * available, but you don't want it re-computed on every render. The
+ * useMemo here keys on the records array identity, which is stable
+ * across renders for ready/error-fallback datasets coming out of the
+ * loader.
+ */
+export function useVaersIndex(loader: LoaderStatus): RecordsByState | null {
+  const records =
+    loader.kind === "ready"
+      ? loader.data.records
+      : loader.kind === "error" && loader.fallback
+        ? loader.fallback.records
+        : null;
+  return useMemo(() => (records ? indexByState(records) : null), [records]);
 }
 
 /* ------------------------------------------------------------------ */

@@ -11,10 +11,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Sex } from "@/lib/vaers/types";
 
-const OPTIONS: Array<{ value: Sex; label: string; helper: string }> = [
-  { value: "F", label: "Female", helper: "VAERS sex = F" },
-  { value: "M", label: "Male", helper: "VAERS sex = M" },
-  { value: "U", label: "Prefer not to say", helper: "VAERS sex = U" },
+const OPTIONS: Array<{ value: Sex; label: string }> = [
+  { value: "F", label: "Female" },
+  { value: "M", label: "Male" },
+  { value: "U", label: "Prefer not to say" },
 ];
 
 export default function SexStepPage() {
@@ -54,30 +54,34 @@ export default function SexStepPage() {
               onClick={() => setSex(opt.value)}
               aria-pressed={isSelected}
               className={cn(
-                "flex w-full items-center justify-between rounded-2xl border bg-card px-5 py-4 text-left min-h-tap shadow-sm transition-colors",
+                "flex w-full items-center justify-between rounded-2xl border-2 bg-card px-5 py-5 text-left min-h-[64px] shadow-sm transition-all",
                 isSelected
-                  ? "border-brand-cyan ring-2 ring-brand-cyan/40"
-                  : "border-border hover:bg-accent/40"
+                  ? "border-brand-cyan bg-brand-cyan/5 ring-2 ring-brand-cyan/20"
+                  : "border-transparent shadow-card hover:border-border hover:bg-accent/40"
               )}
             >
-              <span>
-                <span className="block text-base font-semibold text-brand-navy">
-                  {opt.label}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  {opt.helper}
-                </span>
+              <span className="text-base font-semibold text-brand-navy">
+                {opt.label}
               </span>
-              {isSelected ? (
-                <Check
-                  className="h-6 w-6 text-brand-cyan"
-                  aria-hidden="true"
-                />
-              ) : null}
+              <span
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors",
+                  isSelected
+                    ? "border-brand-cyan bg-brand-cyan text-white"
+                    : "border-border bg-background"
+                )}
+                aria-hidden="true"
+              >
+                {isSelected ? <Check className="h-4 w-4" /> : null}
+              </span>
             </button>
           );
         })}
       </fieldset>
+      <p className="mt-3 text-xs text-muted-foreground">
+        VAERS records use these values (M / F / U). Pick the one most
+        likely to appear in your report.
+      </p>
 
       <div className="mt-auto pt-10">
         <Button

@@ -1,5 +1,7 @@
 "use client";
 
+// Note: per-route metadata for this page is set on the server (see app/(tabs)/report/layout.tsx).
+
 import { useEffect, useState } from "react";
 import {
   Check,

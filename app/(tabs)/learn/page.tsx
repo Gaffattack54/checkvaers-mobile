@@ -1,5 +1,22 @@
-import { BookOpen, FileText, Info, ListChecks, ShieldCheck, Database } from "lucide-react";
+import type { Metadata } from "next";
+import {
+  BookOpen,
+  FileText,
+  Info,
+  ListChecks,
+  ShieldCheck,
+  Database,
+  Scale,
+  HandCoins,
+  Building2,
+} from "lucide-react";
 import { ExpandableCard } from "@/components/shared/expandable-card";
+
+export const metadata: Metadata = {
+  title: "Learn",
+  description:
+    "Plain-language background on VAERS, COVID-19 reporting rules, the PREP Act, CICP and VICP compensation programs, and the VAERS Vaccine Injury Table.",
+};
 
 export default function LearnPage() {
   return (
@@ -154,6 +171,89 @@ export default function LearnPage() {
               Maintaining cold-chain handling and lot-tracking records.
             </li>
           </ul>
+        </ExpandableCard>
+
+        <ExpandableCard
+          icon={<Scale className="h-5 w-5" aria-hidden="true" />}
+          title="The PREP Act and COVID-19 vaccines"
+          summary="Why COVID-19 vaccines have special liability protections."
+          sourceUrl="https://www.phe.gov/Preparedness/legal/prepact/Pages/default.aspx"
+        >
+          <p>
+            The Public Readiness and Emergency Preparedness (PREP) Act,
+            invoked by HHS for COVID-19 in March 2020, provides broad
+            liability immunity to manufacturers, distributors, providers,
+            and program planners for claims related to covered
+            countermeasures — including COVID-19 vaccines.
+          </p>
+          <p>
+            Practical effect for individuals: most COVID-19
+            vaccine-related injury claims can&apos;t go through normal
+            tort law. The only federal pathway for compensation is the{" "}
+            <span className="font-semibold">
+              Countermeasures Injury Compensation Program
+            </span>{" "}
+            (see next card).
+          </p>
+        </ExpandableCard>
+
+        <ExpandableCard
+          icon={<HandCoins className="h-5 w-5" aria-hidden="true" />}
+          title="CICP — the COVID-19 compensation program"
+          summary="The federal program for COVID-19 vaccine injury claims."
+          sourceUrl="https://www.hrsa.gov/cicp"
+        >
+          <p>
+            The Countermeasures Injury Compensation Program (CICP)
+            handles claims for serious injuries from countermeasures
+            covered under the PREP Act declaration, including COVID-19
+            vaccines.
+          </p>
+          <p>Key facts:</p>
+          <ul className="ml-5 list-disc space-y-1">
+            <li>
+              <span className="font-semibold">One year</span> to file from
+              the date of the vaccination (extensions are rare).
+            </li>
+            <li>
+              No attorneys&apos; fees are reimbursed — you file yourself.
+            </li>
+            <li>
+              Compensation covers unreimbursed medical expenses, lost
+              wages, and death benefits — pain and suffering aren&apos;t
+              covered.
+            </li>
+            <li>
+              CICP&apos;s standard of proof is higher than the older
+              VICP (next card): you must show &ldquo;compelling,
+              reliable, valid, medical, and scientific evidence&rdquo;
+              of causation.
+            </li>
+          </ul>
+        </ExpandableCard>
+
+        <ExpandableCard
+          icon={<Building2 className="h-5 w-5" aria-hidden="true" />}
+          title="VICP — the older vaccine injury program"
+          summary="The no-fault program for routine, non-COVID vaccines."
+          sourceUrl="https://www.hrsa.gov/vaccine-compensation"
+        >
+          <p>
+            The National Vaccine Injury Compensation Program (VICP)
+            covers injuries from most routine vaccines (MMR, DTaP, flu,
+            HPV, etc.) — <span className="font-semibold">not</span>{" "}
+            COVID-19 vaccines, which go through CICP instead.
+          </p>
+          <p>
+            VICP uses the Vaccine Injury Table to decide many cases
+            automatically: if your injury and timing match the table,
+            causation is presumed. For injuries not on the table, you
+            can still file but must prove causation.
+          </p>
+          <p>
+            VICP is funded by a $0.75-per-dose excise tax on covered
+            vaccines, not from general tax revenue.
+          </p>
         </ExpandableCard>
 
         <ExpandableCard

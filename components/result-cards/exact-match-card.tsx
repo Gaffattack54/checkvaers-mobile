@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, Share2, ShieldCheck } from "lucide-react";
 import type { VaersRecord } from "@/lib/vaers/types";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,18 @@ interface ExactMatchCardProps {
   records: VaersRecord[];
 }
 
+const INITIAL_VISIBLE = 10;
+const PAGE_SIZE = 10;
+
 export function ExactMatchCard({ records }: ExactMatchCardProps) {
-  const isPlural = records.length > 1;
+  const [visible, setVisible] = useState(INITIAL_VISIBLE);
+  const total = records.length;
+  const isPlural = total > 1;
+  const shown = records.slice(0, visible);
+  const hiddenCount = Math.max(0, total - visible);
+
+  const summary = useMemo(() => summarize(records), [records]);
+
   return (
     <div className="space-y-4">
       <header className="flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 text-emerald-900 ring-1 ring-emerald-200">
@@ -20,24 +30,132 @@ export function ExactMatchCard({ records }: ExactMatchCardProps) {
         <div>
           <p className="font-bold">
             {isPlural
-              ? `${records.length} matches found in VAERS.`
-              : "Match found in VAERS."}
+              ? `${total.toLocaleString()} matching reports found.`
+              : "Matching report found."}
           </p>
           <p className="mt-1 text-sm">
-            Your details closely match {isPlural ? "these reports" : "this report"}.
-            Review the details below to confirm.
+            {isPlural
+              ? "These reports closely match your state, sex, age, and vaccination timing. Tap to expand."
+              : "This report closely matches your state, sex, age, and vaccination timing. Tap to expand."}
           </p>
         </div>
       </header>
 
+      {total > 1 ? <SummaryPanel summary={summary} /> : null}
+
       <ul className="space-y-3">
-        {records.map((r) => (
+        {shown.map((r) => (
           <ExactRecordItem key={r.vaersId} record={r} />
         ))}
       </ul>
 
+      {hiddenCount > 0 ? (
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full"
+          onClick={() =>
+            setVisible((v) => Math.min(total, v + PAGE_SIZE))
+          }
+        >
+          Show {Math.min(PAGE_SIZE, hiddenCount).toLocaleString()} more
+          {hiddenCount > PAGE_SIZE
+            ? ` (${hiddenCount.toLocaleString()} remaining)`
+            : ""}
+        </Button>
+      ) : null}
+
       <ShareResultButton records={records} />
     </div>
+  );
+}
+
+interface Summary {
+  total: number;
+  byManu: Array<{ label: string; count: number; pct: number }>;
+  topSymptoms: Array<{ name: string; count: number }>;
+}
+
+function summarize(records: VaersRecord[]): Summary {
+  const total = records.length;
+  const manuCounts = new Map<string, number>();
+  const symCounts = new Map<string, number>();
+  for (const r of records) {
+    const m = r.vaxManu.split("\\")[0]; // "PFIZER\\BIONTECH" → "PFIZER"
+    manuCounts.set(m, (manuCounts.get(m) ?? 0) + 1);
+    for (const s of r.symptoms) {
+      symCounts.set(s, (symCounts.get(s) ?? 0) + 1);
+    }
+  }
+  const byManu = Array.from(manuCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, count]) => ({
+      label,
+      count,
+      pct: Math.round((count / total) * 100),
+    }));
+  const topSymptoms = Array.from(symCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }));
+  return { total, byManu, topSymptoms };
+}
+
+function SummaryPanel({ summary }: { summary: Summary }) {
+  return (
+    <section className="rounded-2xl bg-card p-4 shadow-card">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        At a glance
+      </h2>
+
+      <div className="mt-3">
+        <p className="text-xs font-medium text-muted-foreground">
+          By manufacturer
+        </p>
+        <ul className="mt-2 space-y-1.5">
+          {summary.byManu.map((m) => (
+            <li key={m.label}>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="font-medium text-brand-navy">{m.label}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {m.count.toLocaleString()} · {m.pct}%
+                </span>
+              </div>
+              <div
+                className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted"
+                aria-hidden="true"
+              >
+                <div
+                  className="h-full rounded-full bg-brand-cyan"
+                  style={{ width: `${Math.max(2, m.pct)}%` }}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {summary.topSymptoms.length > 0 ? (
+        <div className="mt-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            Most commonly reported symptoms
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {summary.topSymptoms.map((s) => (
+              <li
+                key={s.name}
+                className="rounded-full bg-brand-cyan/10 px-2.5 py-1 text-xs text-brand-navy"
+              >
+                {s.name}{" "}
+                <span className="tabular-nums text-muted-foreground">
+                  · {s.count.toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -96,6 +214,17 @@ function ExactRecordItem({ record }: { record: VaersRecord }) {
               <p className="mt-1 text-sm text-brand-navy">{record.symptomText}</p>
             </div>
           ) : null}
+          <p className="mt-3 text-xs text-muted-foreground">
+            <a
+              href={`https://wonder.cdc.gov/vaers.html`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              View full report on CDC WONDER
+            </a>{" "}
+            (lookup by VAERS ID).
+          </p>
         </div>
       ) : null}
     </li>
@@ -118,9 +247,7 @@ function ShareResultButton({ records }: { records: VaersRecord[] }) {
     const summary =
       records.length === 1
         ? `CheckVAERS found a matching VAERS report: ID ${records[0].vaersId}.`
-        : `CheckVAERS found ${records.length} matching VAERS reports: ${records
-            .map((r) => r.vaersId)
-            .join(", ")}.`;
+        : `CheckVAERS found ${records.length} matching VAERS reports.`;
     if (typeof navigator === "undefined") return;
     const nav = navigator;
     try {
