@@ -1,12 +1,27 @@
 import Link from "next/link";
 import { ChevronLeft, Lock } from "lucide-react";
-import { CONTACT_EMAIL } from "@/lib/site-config";
+import { CONTACT_EMAIL, VARIANT } from "@/lib/site-config";
+import { SiteHeader } from "@/components/marketing/site-header";
+import { SiteFooter } from "@/components/marketing/site-footer";
+
+const isSite = VARIANT === "site";
 
 export const metadata = {
   title: "Privacy",
 };
 
 export default function PrivacyPage() {
+  if (isSite) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="mx-auto w-full max-w-3xl px-6 py-10 md:px-10 md:py-16">
+          <PrivacyBody />
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
   return (
     <main className="mx-auto w-full max-w-md px-6 pt-6 pb-16">
       <Link
@@ -16,7 +31,14 @@ export default function PrivacyPage() {
         <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         <span className="text-sm font-medium">Back</span>
       </Link>
+      <PrivacyBody />
+    </main>
+  );
+}
 
+function PrivacyBody() {
+  return (
+    <>
       <header className="mt-4 flex flex-col items-start gap-3">
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan">
           <Lock className="h-6 w-6" aria-hidden="true" />
@@ -124,7 +146,7 @@ export default function PrivacyPage() {
           </p>
         </Block>
       </section>
-    </main>
+    </>
   );
 }
 

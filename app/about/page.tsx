@@ -8,7 +8,11 @@ import {
   Mail,
   ExternalLink,
 } from "lucide-react";
-import { CONTACT_EMAIL, REPO_URL } from "@/lib/site-config";
+import { CONTACT_EMAIL, REPO_URL, VARIANT } from "@/lib/site-config";
+import { SiteHeader } from "@/components/marketing/site-header";
+import { SiteFooter } from "@/components/marketing/site-footer";
+
+const isSite = VARIANT === "site";
 
 export const metadata = {
   title: "About",
@@ -17,6 +21,17 @@ export const metadata = {
 };
 
 export default function AboutPage() {
+  if (isSite) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="mx-auto w-full max-w-3xl px-6 py-10 md:px-10 md:py-16">
+          <AboutBody />
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
   return (
     <main className="mx-auto w-full max-w-md px-6 pt-6 pb-16">
       <Link
@@ -26,7 +41,14 @@ export default function AboutPage() {
         <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         <span className="text-sm font-medium">Back</span>
       </Link>
+      <AboutBody />
+    </main>
+  );
+}
 
+function AboutBody() {
+  return (
+    <>
       <header className="mt-4">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-cyan">
           About
@@ -137,7 +159,7 @@ export default function AboutPage() {
         </Link>
         .
       </p>
-    </main>
+    </>
   );
 }
 
