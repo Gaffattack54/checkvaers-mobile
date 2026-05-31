@@ -34,7 +34,7 @@ export default function StateStepPage() {
   };
 
   return (
-    <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pb-32"}>
+    <div className={isSite ? "mx-auto flex w-full max-w-xl flex-1 flex-col" : "flex flex-1 flex-col px-6 pb-32"}>
       <StepHeader
         step={0}
         total={CHECK_FLOW_STEPS}

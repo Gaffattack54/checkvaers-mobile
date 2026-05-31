@@ -21,7 +21,7 @@ export default function TabsLayout({
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-gradient-to-b from-brand-cyan/[0.04] to-transparent"
           />
-          <div className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-10">
+          <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10 md:py-16">
             {children}
           </div>
         </main>

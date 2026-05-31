@@ -142,7 +142,7 @@ export default function ResultPage() {
     <div
       className={
         isSite
-          ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4"
+          ? "mx-auto flex w-full max-w-3xl flex-1 flex-col"
           : "flex flex-1 flex-col px-6 pt-6 pb-32"
       }
     >

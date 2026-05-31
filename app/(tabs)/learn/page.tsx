@@ -76,7 +76,7 @@ export default function LearnPage() {
       <section
         className={
           isSite
-            ? "mt-8 space-y-3 md:mt-12"
+            ? "mt-10 space-y-3 md:mt-14 lg:max-w-4xl"
             : "mt-8 space-y-3"
         }
       >

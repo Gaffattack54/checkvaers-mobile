@@ -113,7 +113,7 @@ export default function HistoryPage() {
             <ul
               className={
                 isSite
-                  ? "grid gap-3 md:grid-cols-2"
+                  ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3"
                   : "space-y-3"
               }
             >

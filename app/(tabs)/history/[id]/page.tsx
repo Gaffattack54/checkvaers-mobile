@@ -45,7 +45,7 @@ export default function HistoryDetailPage() {
 
   if (item === "missing") {
     return (
-      <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pt-12 pb-32"}>
+      <div className={isSite ? "mx-auto flex w-full max-w-3xl flex-1 flex-col" : "flex flex-1 flex-col px-6 pt-12 pb-32"}>
         <h1 className="text-2xl font-black text-brand-navy">Check not found</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           That history entry isn&apos;t on this device.
@@ -78,7 +78,7 @@ export default function HistoryDetailPage() {
   };
 
   return (
-    <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pt-4 pb-32"}>
+    <div className={isSite ? "mx-auto flex w-full max-w-3xl flex-1 flex-col" : "flex flex-1 flex-col px-6 pt-4 pb-32"}>
       <header>
         <button
           type="button"

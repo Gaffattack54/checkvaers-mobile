@@ -32,7 +32,7 @@ function SiteCheckLanding() {
         </p>
       </header>
 
-      <ol className="mt-10 grid gap-3 md:mt-12 md:grid-cols-2">
+      <ol className="mt-10 grid gap-3 md:mt-14 md:grid-cols-2 lg:grid-cols-4">
         <Step n={1} label="Your state" sub="Two-letter USPS code" />
         <Step n={2} label="Sex" sub="Male, female, or prefer not to say" />
         <Step n={3} label="Date of birth" sub="Used to compute age — never stored remotely" />
