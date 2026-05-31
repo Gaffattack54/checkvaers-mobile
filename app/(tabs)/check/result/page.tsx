@@ -128,13 +128,23 @@ export default function ResultPage() {
   const { result, dataset, note } = phase;
   return (
     <div className="flex flex-1 flex-col px-6 pt-6 pb-32">
-      <h1 className="text-2xl font-black tracking-tight text-brand-navy">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-cyan">
         Your VAERS check
+      </p>
+      <h1 className="mt-1 text-balance text-3xl font-black leading-[1.05] tracking-tight text-brand-navy">
+        {result.exact.length > 0
+          ? result.exact.length === 1
+            ? "Yes — one matching report."
+            : `Yes — ${result.exact.length} matching reports.`
+          : result.potential.length > 0
+            ? `Maybe — ${result.potential.length} partial match${result.potential.length === 1 ? "" : "es"}.`
+            : "No matching report found."}
       </h1>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Searched a {dataset.source === "mock" ? "sample" : "live"} snapshot
-        of {dataset.records.length.toLocaleString()} COVID-19 VAERS reports
-        ({dataset.yearStart}–{dataset.yearEnd}). No data left your device.
+      <p className="mt-2 text-xs text-muted-foreground">
+        Searched {dataset.records.length.toLocaleString()}{" "}
+        {dataset.source === "mock" ? "sample" : "public"} COVID-19 VAERS
+        reports ({dataset.yearStart}–{dataset.yearEnd}). Nothing left your
+        device.
       </p>
 
       {note ? (

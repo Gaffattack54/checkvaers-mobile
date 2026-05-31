@@ -113,20 +113,49 @@ function parseArgs(argv: string[]): Args {
 /* CSV helpers                                                        */
 /* ------------------------------------------------------------------ */
 
-/** Parse a CSV file synchronously into an array of row objects. */
-function readCsv<T = Record<string, string>>(file: string): T[] {
-  const text = fs.readFileSync(file, "utf8");
-  const result = Papa.parse<T>(text, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (h) => h.trim(),
+/**
+ * Stream-parse a CSV file row by row, calling `onRow` for each.
+ *
+ * VAERS DATA files for high-activity years (2021 alone is ~630 MB) exceed
+ * V8's max-string limit (~512 MB), so reading the whole file as one
+ * string is not viable. Streaming keeps memory bounded regardless of
+ * file size — only the current row sits in memory.
+ *
+ * Uses Papaparse's Node stream input mode:
+ *   createReadStream(file).pipe(Papa.parse(Papa.NODE_STREAM_INPUT, { header: true }))
+ * which emits parsed row objects as a Node stream.
+ */
+function streamCsv<T = Record<string, string>>(
+  file: string,
+  onRow: (row: T) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const PapaAny = Papa as any;
+    const parseStream = PapaAny.parse(PapaAny.NODE_STREAM_INPUT, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (h: string) => h.trim(),
+    });
+    const read = fs.createReadStream(file);
+    let bad = 0;
+    parseStream.on("data", (row: T) => {
+      try {
+        onRow(row);
+      } catch {
+        bad++;
+      }
+    });
+    parseStream.on("end", () => {
+      if (bad > 0) {
+        console.warn(`[warn] ${path.basename(file)}: ${bad} row(s) skipped`);
+      }
+      resolve();
+    });
+    parseStream.on("error", reject);
+    read.on("error", reject);
+    read.pipe(parseStream);
   });
-  if (result.errors.length) {
-    console.warn(
-      `[warn] ${path.basename(file)}: ${result.errors.length} parse error(s) — first: ${result.errors[0]?.message ?? ""}`
-    );
-  }
-  return result.data;
 }
 
 /** Convert VAERS date strings like "03/14/2021" → ISO "2021-03-14". */
@@ -144,6 +173,25 @@ function toIsoDate(usDate: string | undefined): string {
 function normalizeSex(s: string | undefined): "M" | "F" | "U" {
   const v = (s ?? "").trim().toUpperCase();
   return v === "M" || v === "F" ? v : "U";
+}
+
+/**
+ * Truncate a narrative string at a word boundary, append "…" if cut.
+ *
+ * VAERS SYMPTOM_TEXT averages a few hundred chars but can run multiple
+ * KB. Keeping the full text would push the prepared snapshot well past
+ * mobile-browser parse + storage limits; 200 chars retains the
+ * chronology / context the result cards actually show users.
+ */
+const NARRATIVE_MAX = 200;
+function truncateNarrative(s: string): string {
+  const trimmed = s.trim();
+  if (trimmed.length <= NARRATIVE_MAX) return trimmed;
+  // Cut at the last whitespace before the limit; fall back to a hard cut
+  // if the first 200 chars are a single word.
+  const window = trimmed.slice(0, NARRATIVE_MAX);
+  const wordCut = window.replace(/\s+\S*$/, "");
+  return (wordCut || window) + "…";
 }
 
 /* ------------------------------------------------------------------ */
@@ -175,86 +223,87 @@ async function main() {
       continue;
     }
 
-    console.log(`  ${year}: reading...`);
+    console.log(`  ${year}: reading vax…`);
 
-    // VAX first: gives us the universe of COVID-19 VAERS_IDs for the year.
-    const vaxRows = readCsv<{
+    // VAX first: gives us the universe of COVID-19 VAERS_IDs + manufacturer.
+    // (VAX_DATE lives in VAERSDATA.csv, not here — VAERSVAX only carries
+    // VAX_TYPE/VAX_MANU/VAX_LOT/VAX_DOSE_SERIES/VAX_ROUTE/VAX_SITE/VAX_NAME.)
+    const covidByVaersId = new Map<string, { vaxManu: string }>();
+    await streamCsv<{
       VAERS_ID: string;
       VAX_TYPE: string;
       VAX_MANU: string;
-      VAX_DATE: string;
-    }>(vaxFile);
-
-    const covidByVaersId = new Map<
-      string,
-      { vaxManu: string; vaxDate: string }
-    >();
-    for (const v of vaxRows) {
-      if (v.VAX_TYPE?.trim() !== "COVID19") continue;
-      // Some IDs have multiple vax rows (multi-dose same report). Take first.
-      if (covidByVaersId.has(v.VAERS_ID)) continue;
+    }>(vaxFile, (v) => {
+      if (v.VAX_TYPE?.trim() !== "COVID19") return;
+      // Multi-dose reports have multiple vax rows; keep the first.
+      if (covidByVaersId.has(v.VAERS_ID)) return;
       covidByVaersId.set(v.VAERS_ID, {
         vaxManu: (v.VAX_MANU ?? "UNKNOWN MANUFACTURER").trim(),
-        vaxDate: toIsoDate(v.VAX_DATE),
       });
-    }
+    });
 
     if (covidByVaersId.size === 0) {
       console.log(`  ${year}: no COVID-19 rows.`);
       continue;
     }
+    console.log(
+      `  ${year}: ${covidByVaersId.size.toLocaleString()} COVID reports, reading symptoms…`
+    );
 
     // SYMPTOMS: SYMPTOM1..SYMPTOM5 → string[]
-    const symRows = readCsv<Record<string, string>>(symFile);
     const symptomsById = new Map<string, string[]>();
-    for (const row of symRows) {
-      if (!covidByVaersId.has(row.VAERS_ID)) continue;
+    await streamCsv<Record<string, string>>(symFile, (row) => {
+      if (!covidByVaersId.has(row.VAERS_ID)) return;
       const list: string[] = [];
       for (let i = 1; i <= 5; i++) {
         const v = row[`SYMPTOM${i}`]?.trim();
         if (v) list.push(v);
       }
-      // Multiple symptom rows per report exist; merge unique.
       const prior = symptomsById.get(row.VAERS_ID) ?? [];
       for (const s of list) if (!prior.includes(s)) prior.push(s);
       symptomsById.set(row.VAERS_ID, prior);
-    }
+    });
 
-    // DATA: join in patient demographics + narrative.
-    const dataRows = readCsv<{
+    console.log(`  ${year}: reading data…`);
+
+    let yearCount = 0;
+    await streamCsv<{
       VAERS_ID: string;
       RECVDATE: string;
       STATE: string;
       AGE_YRS: string;
       SEX: string;
+      VAX_DATE: string;
       SYMPTOM_TEXT: string;
       NUMDAYS: string;
-    }>(dataFile);
-
-    let yearCount = 0;
-    for (const d of dataRows) {
+    }>(dataFile, (d) => {
       const vax = covidByVaersId.get(d.VAERS_ID);
-      if (!vax) continue;
+      if (!vax) return;
 
       const ageYears = Number.parseFloat(d.AGE_YRS);
-      if (!Number.isFinite(ageYears)) continue;
+      if (!Number.isFinite(ageYears)) return;
+
+      const vaxDate = toIsoDate(d.VAX_DATE);
+      // Reports without a vaccination date can't participate in the
+      // date-window match. Drop them.
+      if (!vaxDate) return;
 
       records.push({
         vaersId: d.VAERS_ID,
         state: (d.STATE ?? "").trim().toUpperCase(),
         sex: normalizeSex(d.SEX),
         ageYears: Math.round(ageYears),
-        vaxDate: vax.vaxDate,
+        vaxDate,
         vaxManu: vax.vaxManu,
         symptoms: symptomsById.get(d.VAERS_ID) ?? [],
-        symptomText: (d.SYMPTOM_TEXT ?? "").trim(),
+        symptomText: truncateNarrative(d.SYMPTOM_TEXT ?? ""),
         recvDate: toIsoDate(d.RECVDATE),
         numDays: Number.isFinite(Number(d.NUMDAYS))
           ? Number(d.NUMDAYS)
           : null,
       });
       yearCount++;
-    }
+    });
 
     console.log(`  ${year}: kept ${yearCount.toLocaleString()} records`);
   }
@@ -269,33 +318,39 @@ async function main() {
   // diff-friendliness across runs.
   records.sort((a, b) => a.vaxDate.localeCompare(b.vaxDate));
 
-  const out: OutputFile = {
-    metadata: {
-      source: "vaers.hhs.gov",
-      generatedAt: new Date().toISOString(),
-      yearStart: args.yearStart,
-      yearEnd: args.yearEnd,
-      recordCount: records.length,
-    },
-    records,
+  const metadata = {
+    source: "vaers.hhs.gov" as const,
+    generatedAt: new Date().toISOString(),
+    yearStart: args.yearStart,
+    yearEnd: args.yearEnd,
+    recordCount: records.length,
   };
 
   fs.mkdirSync(path.dirname(args.output), { recursive: true });
-  const json = JSON.stringify(out);
+
+  // Stream-write the JSON: assemble the wrapper by hand and write one
+  // record at a time. JSON.stringify on the whole object would build a
+  // single string > 1 GB for full datasets, blowing V8's max-string cap.
+  const tmpJson = args.output + ".tmp.json";
+  const jsonStream = fs.createWriteStream(tmpJson);
+  await new Promise<void>((resolve, reject) => {
+    jsonStream.on("error", reject);
+    jsonStream.on("finish", () => resolve());
+    jsonStream.write(`{"metadata":${JSON.stringify(metadata)},"records":[`);
+    for (let i = 0; i < records.length; i++) {
+      if (i > 0) jsonStream.write(",");
+      jsonStream.write(JSON.stringify(records[i]));
+    }
+    jsonStream.write("]}");
+    jsonStream.end();
+  });
+
   await pipeline(
-    fs.createReadStream(
-      // write the JSON to a temp and stream-gzip it; avoids holding 2× size in RAM
-      // for very large datasets.
-      (() => {
-        const tmp = args.output + ".tmp.json";
-        fs.writeFileSync(tmp, json);
-        return tmp;
-      })()
-    ),
+    fs.createReadStream(tmpJson),
     zlib.createGzip({ level: 9 }),
     fs.createWriteStream(args.output)
   );
-  fs.unlinkSync(args.output + ".tmp.json");
+  fs.unlinkSync(tmpJson);
 
   const stat = fs.statSync(args.output);
   console.log(

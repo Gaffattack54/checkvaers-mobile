@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, Lock, Database } from "lucide-react";
+import { ShieldCheck, Lock, Database, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
@@ -11,38 +11,50 @@ export default function HomePage() {
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan">
           <ShieldCheck className="h-9 w-9" aria-hidden="true" />
         </div>
-        <h1 className="mt-6 text-4xl font-black tracking-tight text-brand-navy">
+        <p className="mt-6 text-xs font-bold uppercase tracking-[0.18em] text-brand-cyan">
           CheckVAERS
+        </p>
+        <h1 className="mt-2 text-balance text-3xl font-black leading-[1.05] tracking-tight text-brand-navy">
+          Was your vaccine adverse event reported to VAERS?
         </h1>
-        <p className="mt-3 text-balance text-base text-muted-foreground">
-          Search the public VAERS database for COVID-19 adverse event reports
-          matching your details.
+        <p className="mt-3 text-balance text-sm text-muted-foreground">
+          Search the public VAERS database for COVID-19 reports matching your
+          details — right on your phone.
         </p>
       </header>
 
-      <section className="mt-10 space-y-3">
+      <section className="mt-8 space-y-3">
         <FeatureRow
           icon={<Lock className="h-5 w-5" aria-hidden="true" />}
           title="Private by design"
-          body="All matching happens on your device. No data leaves your phone."
+          body="Matching runs on your device. None of your details are transmitted."
         />
         <FeatureRow
           icon={<Database className="h-5 w-5" aria-hidden="true" />}
-          title="Public VAERS data"
-          body="Searches the last 7 years of COVID-19 reports from VAERS."
+          title="Real VAERS data"
+          body="889,000+ public COVID-19 reports from HHS, updated periodically."
+        />
+        <FeatureRow
+          icon={<Smartphone className="h-5 w-5" aria-hidden="true" />}
+          title="Works offline"
+          body="Install to your home screen. After the first load, no network needed."
         />
       </section>
 
-      <div className="mt-auto pt-10 space-y-3">
+      <div className="mt-auto pt-8 space-y-3">
         <Button asChild size="lg" className="w-full">
-          <Link href="/check">Start a check</Link>
+          <Link href="/check">Check VAERS now</Link>
         </Button>
         <Button asChild variant="outline" size="lg" className="w-full">
-          <Link href="/learn">Learn about VAERS</Link>
+          <Link href="/learn">About VAERS</Link>
         </Button>
         <p className="text-balance px-2 text-center text-xs text-muted-foreground">
-          This tool is not a medical diagnostic tool. Consult a healthcare
-          provider for medical advice.
+          Not a medical diagnostic tool. Consult a healthcare provider for
+          medical advice.{" "}
+          <Link href="/privacy" className="underline underline-offset-2">
+            Privacy
+          </Link>
+          .
         </p>
       </div>
     </main>

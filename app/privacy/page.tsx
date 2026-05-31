@@ -109,6 +109,19 @@ export default function PrivacyPage() {
             storage removes everything CheckVAERS knows about you.
           </p>
         </Block>
+
+        <Block title="Questions or feedback?">
+          <p>
+            Email us at{" "}
+            <a
+              href="mailto:hello@checkvaers.app"
+              className="font-semibold text-brand-cyan underline underline-offset-2"
+            >
+              hello@checkvaers.app
+            </a>{" "}
+            — we read every message. No tracking pixels, no auto-replies.
+          </p>
+        </Block>
       </section>
     </main>
   );
