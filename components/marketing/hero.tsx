@@ -1,6 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+function CheckDot() {
+  return (
+    <span
+      aria-hidden="true"
+      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-cyan/15 text-brand-cyan"
+    >
+      <Check className="h-3 w-3" strokeWidth={3} />
+    </span>
+  );
+}
 
 export function MarketingHero() {
   return (
@@ -39,13 +50,30 @@ export function MarketingHero() {
               <Link href="#how-it-works">How it works</Link>
             </Button>
           </div>
-          <p className="mt-5 text-xs text-muted-foreground">
-            No account · No tracking · Works offline after first load
-          </p>
+          <ul className="mt-6 grid gap-2 text-sm text-brand-navy/80 sm:grid-cols-2">
+            <li className="flex items-start gap-2">
+              <CheckDot />
+              <span>No account. No tracking pixels. No third-party scripts.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckDot />
+              <span>HHS-de-identified public data. No PHI processed.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckDot />
+              <span>Works fully offline after the first load.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckDot />
+              <span>Installable to your phone&apos;s home screen.</span>
+            </li>
+          </ul>
         </div>
 
-        {/* Phone mockup-ish illustration. Pure CSS — no image asset needed. */}
-        <div className="mt-12 flex flex-1 justify-center lg:mt-0">
+        {/* Phone mockup-ish illustration. Pure CSS — no image asset needed.
+            Hidden below lg: on small screens, "phone-showing-a-phone" reads
+            awkwardly and steals above-the-fold real estate. */}
+        <div className="hidden flex-1 justify-center lg:flex">
           <PhoneMockup />
         </div>
       </div>
