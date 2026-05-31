@@ -18,6 +18,9 @@ import { checksRepo } from "@/lib/storage/db";
 import { ExactMatchCard } from "@/components/result-cards/exact-match-card";
 import { PotentialMatchesList } from "@/components/result-cards/potential-matches-list";
 import { NoMatchCard } from "@/components/result-cards/no-match-card";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 type Phase =
   | { kind: "waiting-for-data" }
@@ -136,11 +139,23 @@ export default function ResultPage() {
 
   const { result, dataset, note } = phase;
   return (
-    <div className="flex flex-1 flex-col px-6 pt-6 pb-32">
+    <div
+      className={
+        isSite
+          ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4"
+          : "flex flex-1 flex-col px-6 pt-6 pb-32"
+      }
+    >
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-cyan">
         Your VAERS check
       </p>
-      <h1 className="mt-1 text-balance text-3xl font-black leading-[1.05] tracking-tight text-brand-navy">
+      <h1
+        className={
+          isSite
+            ? "mt-1 text-balance text-3xl font-black leading-[1.05] tracking-tight text-brand-navy md:text-4xl lg:text-5xl"
+            : "mt-1 text-balance text-3xl font-black leading-[1.05] tracking-tight text-brand-navy"
+        }
+      >
         {result.exact.length > 0
           ? result.exact.length === 1
             ? "Yes — one matching report."

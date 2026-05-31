@@ -12,6 +12,9 @@ import { checksRepo, type SavedCheck } from "@/lib/storage/db";
 import { findStateByCode } from "@/lib/vaers/us-states";
 import { formatLongDate } from "@/lib/vaers/dates";
 import { Button } from "@/components/ui/button";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 export default function HistoryPage() {
   const [items, setItems] = useState<SavedCheck[] | null>(null);
@@ -46,18 +49,51 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col px-6 pt-12">
-      <header className="flex flex-col items-center text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan">
-          <HistoryIcon className="h-7 w-7" aria-hidden="true" />
+    <div
+      className={
+        isSite
+          ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4"
+          : "flex flex-1 flex-col px-6 pt-12"
+      }
+    >
+      <header
+        className={
+          isSite ? "max-w-3xl" : "flex flex-col items-center text-center"
+        }
+      >
+        <div
+          className={
+            isSite
+              ? "flex h-12 w-12 items-center justify-center rounded-xl bg-brand-cyan/10 text-brand-cyan md:h-14 md:w-14"
+              : "flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan"
+          }
+        >
+          <HistoryIcon className={isSite ? "h-6 w-6 md:h-7 md:w-7" : "h-7 w-7"} aria-hidden="true" />
         </div>
-        <h1 className="mt-5 text-3xl font-black tracking-tight text-brand-navy">
-          History
-        </h1>
-        <p className="mt-2 text-balance text-sm text-muted-foreground">
-          Past checks performed on this device. Stored only here — clearing
-          your browser data will remove them.
-        </p>
+        {isSite ? (
+          <>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-brand-cyan">
+              History
+            </p>
+            <h1 className="mt-2 text-balance text-3xl font-black tracking-tight text-brand-navy md:text-4xl lg:text-5xl">
+              Your past VAERS checks.
+            </h1>
+            <p className="mt-3 max-w-2xl text-balance text-base text-muted-foreground md:text-lg">
+              Saved locally on this device only — nothing is synced or
+              transmitted. Clearing your browser data removes them.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-5 text-3xl font-black tracking-tight text-brand-navy">
+              History
+            </h1>
+            <p className="mt-2 text-balance text-sm text-muted-foreground">
+              Past checks performed on this device. Stored only here — clearing
+              your browser data will remove them.
+            </p>
+          </>
+        )}
       </header>
 
       {error ? (
@@ -67,14 +103,20 @@ export default function HistoryPage() {
         </div>
       ) : null}
 
-      <section className="mt-6">
+      <section className={isSite ? "mt-8 md:mt-12" : "mt-6"}>
         {items === null ? (
           <SkeletonList />
         ) : items.length === 0 ? (
           <EmptyState />
         ) : (
           <>
-            <ul className="space-y-3">
+            <ul
+              className={
+                isSite
+                  ? "grid gap-3 md:grid-cols-2"
+                  : "space-y-3"
+              }
+            >
               {items.map((c) => (
                 <HistoryRow key={c.id} item={c} />
               ))}

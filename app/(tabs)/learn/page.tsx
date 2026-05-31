@@ -11,6 +11,9 @@ import {
   Building2,
 } from "lucide-react";
 import { ExpandableCard } from "@/components/shared/expandable-card";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 export const metadata: Metadata = {
   title: "Learn",
@@ -20,21 +23,63 @@ export const metadata: Metadata = {
 
 export default function LearnPage() {
   return (
-    <div className="flex flex-1 flex-col px-6 pt-12">
-      <header className="flex flex-col items-center text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan">
-          <BookOpen className="h-7 w-7" aria-hidden="true" />
+    <div
+      className={
+        isSite
+          ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4"
+          : "flex flex-1 flex-col px-6 pt-12"
+      }
+    >
+      <header
+        className={
+          isSite
+            ? "max-w-3xl"
+            : "flex flex-col items-center text-center"
+        }
+      >
+        <div
+          className={
+            isSite
+              ? "flex h-12 w-12 items-center justify-center rounded-xl bg-brand-cyan/10 text-brand-cyan md:h-14 md:w-14"
+              : "flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan"
+          }
+        >
+          <BookOpen className={isSite ? "h-6 w-6 md:h-7 md:w-7" : "h-7 w-7"} aria-hidden="true" />
         </div>
-        <h1 className="mt-5 text-3xl font-black tracking-tight text-brand-navy">
-          Learn
-        </h1>
-        <p className="mt-2 text-balance text-sm text-muted-foreground">
-          Plain-language background on VAERS, reporting rules, and this
-          app&apos;s data.
-        </p>
+        {isSite ? (
+          <>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-brand-cyan">
+              Learn
+            </p>
+            <h1 className="mt-2 text-balance text-3xl font-black tracking-tight text-brand-navy md:text-4xl lg:text-5xl">
+              The background, in plain English.
+            </h1>
+            <p className="mt-3 max-w-2xl text-balance text-base text-muted-foreground md:text-lg">
+              Eight short reads on VAERS, the COVID-19 reporting rules, the
+              PREP Act, the federal compensation programs (CICP &amp; VICP),
+              and how current this dataset is.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-5 text-3xl font-black tracking-tight text-brand-navy">
+              Learn
+            </h1>
+            <p className="mt-2 text-balance text-sm text-muted-foreground">
+              Plain-language background on VAERS, reporting rules, and this
+              app&apos;s data.
+            </p>
+          </>
+        )}
       </header>
 
-      <section className="mt-8 space-y-3">
+      <section
+        className={
+          isSite
+            ? "mt-8 space-y-3 md:mt-12"
+            : "mt-8 space-y-3"
+        }
+      >
         <ExpandableCard
           icon={<Info className="h-5 w-5" aria-hidden="true" />}
           title="What is VAERS?"

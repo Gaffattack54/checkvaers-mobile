@@ -14,6 +14,9 @@ import {
 import { reportRepo, type ReportDraft } from "@/lib/storage/db";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 const VAERS_REPORT_URL = "https://vaers.hhs.gov/reportevent.html";
 
@@ -149,22 +152,57 @@ export default function ReportPage() {
     : 0;
 
   return (
-    <div className="flex flex-1 flex-col px-6 pt-12 pb-12">
-      <header className="flex flex-col items-center text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan">
-          <FilePlus2 className="h-7 w-7" aria-hidden="true" />
+    <div
+      className={
+        isSite
+          ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4"
+          : "flex flex-1 flex-col px-6 pt-12 pb-12"
+      }
+    >
+      <header
+        className={
+          isSite ? "max-w-3xl" : "flex flex-col items-center text-center"
+        }
+      >
+        <div
+          className={
+            isSite
+              ? "flex h-12 w-12 items-center justify-center rounded-xl bg-brand-cyan/10 text-brand-cyan md:h-14 md:w-14"
+              : "flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan"
+          }
+        >
+          <FilePlus2 className={isSite ? "h-6 w-6 md:h-7 md:w-7" : "h-7 w-7"} aria-hidden="true" />
         </div>
-        <h1 className="mt-5 text-3xl font-black tracking-tight text-brand-navy">
-          File a VAERS report
-        </h1>
-        <p className="mt-2 text-balance text-sm text-muted-foreground">
-          Anyone can submit a VAERS report. The official form lives at
-          vaers.hhs.gov. Use the checklist below to gather what you need
-          before you start.
-        </p>
+        {isSite ? (
+          <>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-brand-cyan">
+              File a report
+            </p>
+            <h1 className="mt-2 text-balance text-3xl font-black tracking-tight text-brand-navy md:text-4xl lg:text-5xl">
+              Your VAERS report — prep, then file.
+            </h1>
+            <p className="mt-3 max-w-2xl text-balance text-base text-muted-foreground md:text-lg">
+              Anyone can submit a VAERS report. The official form lives at
+              vaers.hhs.gov. Use the checklist below to gather what you need
+              before you open it.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-5 text-3xl font-black tracking-tight text-brand-navy">
+              File a VAERS report
+            </h1>
+            <p className="mt-2 text-balance text-sm text-muted-foreground">
+              Anyone can submit a VAERS report. The official form lives at
+              vaers.hhs.gov. Use the checklist below to gather what you need
+              before you start.
+            </p>
+          </>
+        )}
       </header>
 
-      <section className="mt-8">
+      <div className={isSite ? "mt-10 md:mt-14 lg:grid lg:grid-cols-2 lg:gap-10" : ""}>
+      <section className={isSite ? "" : "mt-8"}>
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Checklist
@@ -252,7 +290,8 @@ export default function ReportPage() {
         </div>
       </section>
 
-      <section className="mt-8">
+      <div className={isSite ? "mt-8 space-y-8 lg:mt-0" : ""}>
+      <section className={isSite ? "" : "mt-8"}>
         <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           <Lightbulb className="h-4 w-4 text-brand-cyan" aria-hidden="true" />
           Tips
@@ -270,7 +309,7 @@ export default function ReportPage() {
         </ul>
       </section>
 
-      <div className="mt-8 space-y-3">
+      <div className={isSite ? "space-y-3" : "mt-8 space-y-3"}>
         <Button asChild size="lg" className="w-full">
           <a
             href={VAERS_REPORT_URL}
@@ -294,6 +333,8 @@ export default function ReportPage() {
           The form opens at vaers.hhs.gov in a new tab. CheckVAERS can&apos;t
           submit reports for you — only HHS can accept them.
         </p>
+      </div>
+      </div>
       </div>
     </div>
   );
