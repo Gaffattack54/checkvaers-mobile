@@ -297,113 +297,123 @@ STY_COVER_FOOT = style(
 
 
 def draw_cover(canv: canvas.Canvas, doc) -> None:
-    """Full-bleed navy cover. Drawn directly on the canvas — the cover
-    page uses no Frame, so the content for that page is just one tiny
-    flowable that triggers the page."""
+    """Cover page — restrained editorial layout. One wordmark, one
+    cyan accent rule, generous negative space, restrained bottom bar."""
     canv.saveState()
 
-    # Background
+    # 1. Solid navy ground.
     canv.setFillColor(NAVY)
     canv.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
 
-    # Subtle diagonal pattern overlay — staggered hex outlines
-    canv.setStrokeColor(colors.HexColor("#142A56"))
-    canv.setLineWidth(1)
-    for i in range(0, int(PAGE_H) + 80, 60):
-        for j in range(0, int(PAGE_W) + 80, 80):
-            offset = 30 if (i // 60) % 2 else 0
-            x, y = j + offset, i
-            canv.line(x, y, x + 12, y - 7)
-            canv.line(x + 12, y - 7, x + 12, y - 21)
-            canv.line(x + 12, y - 21, x, y - 28)
-            canv.line(x, y - 28, x - 12, y - 21)
-            canv.line(x - 12, y - 21, x - 12, y - 7)
-            canv.line(x - 12, y - 7, x, y)
+    # 2. A single soft glow in the upper right — a directional cue
+    # without the busyness of a tiled pattern. Drawn as a series of
+    # concentric outline circles fading into the navy.
+    glow_cx = PAGE_W - 1.4 * inch
+    glow_cy = PAGE_H - 1.6 * inch
+    for i in range(14, 0, -1):
+        r = i * 12
+        # Lerp from a very dark navy at the edge to a light cyan tint at the centre.
+        t = 1 - i / 14
+        col = colors.Color(
+            (NAVY.red * (1 - t) + CYAN.red * t * 0.18) / 1,
+            (NAVY.green * (1 - t) + CYAN.green * t * 0.18) / 1,
+            (NAVY.blue * (1 - t) + CYAN.blue * t * 0.18) / 1,
+        )
+        canv.setStrokeColor(col)
+        canv.setLineWidth(0.4)
+        canv.circle(glow_cx, glow_cy, r, stroke=1, fill=0)
 
-    # Cyan vertical accent rule on the left
-    rule_x = 0.55 * inch
-    canv.setFillColor(CYAN)
-    canv.rect(rule_x, 1.5 * inch, 0.06 * inch, PAGE_H - 3.0 * inch, fill=1, stroke=0)
+    # 3. Bare typographic stack — left-aligned to a single hairline grid
+    # column. No badge, no side rule, no marketing collateral.
+    text_x = 0.85 * inch
+    text_w = PAGE_W - text_x - 0.85 * inch
 
-    # Eyebrow + wordmark
-    text_x = 1.0 * inch
-    text_w = PAGE_W - text_x - 0.75 * inch
-
-    eyebrow_y = PAGE_H - 1.6 * inch
-    _draw_tracked(canv, text_x, eyebrow_y, "CLINICIAN BRIEF",
-                  font="Helvetica-Bold", size=11, tracking=5, color=CYAN)
-
-    # Brand mark badge
-    badge_y = eyebrow_y - 0.35 * inch
-    canv.setFillColor(CYAN)
-    canv.setStrokeColor(colors.white)
-    canv.setLineWidth(0.5)
-    badge_size = 0.35 * inch
-    canv.roundRect(
-        text_x, badge_y - badge_size + 0.02 * inch,
-        badge_size, badge_size,
-        radius=0.07 * inch, fill=1, stroke=0,
-    )
-    # Stylised checkmark inside badge
-    canv.setStrokeColor(NAVY)
-    canv.setLineWidth(2.5)
-    canv.setLineCap(1)
-    cx = text_x + badge_size / 2
-    cy = badge_y - badge_size / 2 + 0.02 * inch
-    canv.line(cx - 0.06 * inch, cy, cx - 0.015 * inch, cy - 0.04 * inch)
-    canv.line(cx - 0.015 * inch, cy - 0.04 * inch, cx + 0.08 * inch, cy + 0.06 * inch)
-
-    # Wordmark
-    canv.setFillColor(colors.white)
-    canv.setFont("Helvetica-Bold", 56)
-    canv.drawString(text_x + badge_size + 0.18 * inch, badge_y - badge_size + 0.10 * inch, "CheckVAERS")
-
-    # Tagline (Paragraph for wrapping)
-    tagline_text = (
-        "An on-device search interface to the public<br/>"
-        "VAERS COVID-19 adverse-event dataset."
-    )
-    tagline = Paragraph(tagline_text, STY_COVER_TAGLINE)
-    tagline.wrapOn(canv, text_w, 3 * inch)
-    tagline.drawOn(canv, text_x, badge_y - 2.0 * inch)
-
-    # Mid-document context line
-    canv.setFillColor(colors.HexColor("#A9B6CC"))
-    canv.setFont("Helvetica", 10)
-    canv.drawString(
+    # Eyebrow (top)
+    _draw_tracked(
+        canv,
         text_x,
-        badge_y - 2.8 * inch,
-        "Prepared for stakeholder review.",
+        PAGE_H - 1.15 * inch,
+        "CLINICIAN BRIEF",
+        font="Helvetica-Bold",
+        size=10,
+        tracking=5,
+        color=CYAN,
     )
 
-    # Stats bar (bottom)
-    stat_y = 1.7 * inch
+    # Hair rule under the eyebrow — small, sets the column edge.
+    canv.setStrokeColor(colors.HexColor("#1F3463"))
+    canv.setLineWidth(0.6)
+    canv.line(
+        text_x,
+        PAGE_H - 1.32 * inch,
+        text_x + 1.2 * inch,
+        PAGE_H - 1.32 * inch,
+    )
+
+    # Wordmark — large, white, kerning a touch tight.
+    word_y = PAGE_H - 3.3 * inch
+    to = canv.beginText(text_x, word_y)
+    to.setFillColor(colors.white)
+    to.setFont("Helvetica-Bold", 64)
+    to.setCharSpace(-0.5)
+    to.textOut("CheckVAERS")
+    canv.drawText(to)
+
+    # Short cyan accent rule directly under the wordmark.
+    canv.setFillColor(CYAN)
+    canv.rect(
+        text_x,
+        word_y - 0.32 * inch,
+        1.4 * inch,
+        0.05 * inch,
+        fill=1,
+        stroke=0,
+    )
+
+    # Tagline — two restrained lines in muted slate.
+    tagline_para = Paragraph(
+        "An on-device search interface<br/>to the public VAERS COVID-19 dataset.",
+        STY_COVER_TAGLINE,
+    )
+    tagline_para.wrapOn(canv, text_w, 3 * inch)
+    tagline_para.drawOn(canv, text_x, word_y - 1.45 * inch)
+
+    # 4. Bottom band — hairline + four stats + version line.
+    bottom_y = 1.55 * inch
+    canv.setStrokeColor(colors.HexColor("#1F3463"))
+    canv.setLineWidth(0.7)
+    canv.line(text_x, bottom_y + 0.95 * inch, PAGE_W - text_x, bottom_y + 0.95 * inch)
+
     stats = [
         ("889,521", "VAERS REPORTS"),
         ("56", "STATES & TERR."),
         ("2020–25", "YEARS COVERED"),
         ("5", "DOSES / CHECK"),
     ]
-    canv.setStrokeColor(colors.HexColor("#1F3463"))
-    canv.setLineWidth(0.6)
-    canv.line(text_x, stat_y + 0.85 * inch, PAGE_W - 0.75 * inch, stat_y + 0.85 * inch)
-    col_w = (PAGE_W - text_x - 0.75 * inch) / 4
+    col_w = (PAGE_W - 2 * text_x) / 4
     for i, (val, lbl) in enumerate(stats):
         x = text_x + i * col_w
         canv.setFillColor(CYAN)
-        canv.setFont("Helvetica-Bold", 24)
-        canv.drawString(x, stat_y + 0.4 * inch, val)
-        _draw_tracked(canv, x, stat_y + 0.15 * inch, lbl,
-                      font="Helvetica-Bold", size=7.5, tracking=2.5,
-                      color=colors.HexColor("#A9B6CC"))
+        canv.setFont("Helvetica-Bold", 22)
+        canv.drawString(x, bottom_y + 0.5 * inch, val)
+        _draw_tracked(
+            canv,
+            x,
+            bottom_y + 0.25 * inch,
+            lbl,
+            font="Helvetica-Bold",
+            size=7.5,
+            tracking=2.5,
+            color=colors.HexColor("#7F8CA6"),
+        )
 
-    # Bottom URL + date
-    canv.setFillColor(colors.HexColor("#9AA8BF"))
+    # Footer (very bottom).
+    canv.setFillColor(colors.HexColor("#7F8CA6"))
     canv.setFont("Helvetica", 9)
-    canv.drawString(text_x, 0.8 * inch, f"checkvaers-site.vercel.app · {CONTACT}")
+    canv.drawString(text_x, 0.75 * inch, "checkvaers-site.vercel.app")
     canv.setFillColor(colors.HexColor("#5C6A82"))
-    canv.setFont("Helvetica", 8)
-    canv.drawRightString(PAGE_W - 0.75 * inch, 0.8 * inch, "v0.1.1 · May 2026")
+    canv.setFont("Helvetica", 9)
+    canv.drawRightString(PAGE_W - text_x, 0.75 * inch, "v0.1.1 — May 2026")
 
     canv.restoreState()
 
