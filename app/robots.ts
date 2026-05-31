@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const BASE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://checkvaers.app";
+import { SITE_URL } from "@/lib/site-config";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -10,10 +8,10 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         // Per-user state lives in /history; nothing to crawl there
         // (it's all client-rendered from IndexedDB anyway).
-        allow: ["/", "/check", "/learn", "/report", "/privacy"],
+        allow: ["/", "/check", "/learn", "/report", "/about", "/privacy"],
         disallow: ["/history", "/check/result"],
       },
     ],
-    sitemap: `${BASE_URL}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "@/components/shared/sw-registrar";
+import { SITE_URL } from "@/lib/site-config";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -10,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://checkvaers.app"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "CheckVAERS",
     template: "%s · CheckVAERS",

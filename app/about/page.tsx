@@ -8,6 +8,7 @@ import {
   Mail,
   ExternalLink,
 } from "lucide-react";
+import { CONTACT_EMAIL, REPO_URL } from "@/lib/site-config";
 
 export const metadata = {
   title: "About",
@@ -102,7 +103,7 @@ export default function AboutPage() {
           <p>
             The full source code is on{" "}
             <a
-              href="https://github.com/Gaffattack54/checkvaers-mobile"
+              href={REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-0.5 font-semibold text-brand-cyan underline underline-offset-2"
@@ -120,10 +121,10 @@ export default function AboutPage() {
           <p>
             Questions, corrections, or partnership inquiries:{" "}
             <a
-              href="mailto:hello@checkvaers.app"
+              href={`mailto:${CONTACT_EMAIL}`}
               className="font-semibold text-brand-cyan underline underline-offset-2"
             >
-              hello@checkvaers.app
+              {CONTACT_EMAIL}
             </a>
           </p>
         </Card>

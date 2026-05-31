@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft, Lock } from "lucide-react";
+import { CONTACT_EMAIL } from "@/lib/site-config";
 
 export const metadata = {
   title: "Privacy",
@@ -114,10 +115,10 @@ export default function PrivacyPage() {
           <p>
             Email us at{" "}
             <a
-              href="mailto:hello@checkvaers.app"
+              href={`mailto:${CONTACT_EMAIL}`}
               className="font-semibold text-brand-cyan underline underline-offset-2"
             >
-              hello@checkvaers.app
+              {CONTACT_EMAIL}
             </a>{" "}
             — we read every message. No tracking pixels, no auto-replies.
           </p>

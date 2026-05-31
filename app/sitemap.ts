@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const BASE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://checkvaers.app";
+import { SITE_URL } from "@/lib/site-config";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -20,7 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/privacy",
   ];
   return staticPaths.map((path) => ({
-    url: `${BASE_URL}${path}`,
+    url: `${SITE_URL}${path}`,
     lastModified: now,
     changeFrequency: path === "/" || path === "/check" ? "weekly" : "monthly",
     priority: path === "/" || path === "/check" ? 1.0 : 0.7,
