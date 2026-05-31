@@ -5,7 +5,7 @@ export function StatsBar() {
         <Stat value="889K+" label="VAERS reports" />
         <Stat value="56" label="States &amp; territories" />
         <Stat value="2020–25" label="Years covered" />
-        <Stat value="0" label="Accounts or trackers" />
+        <Stat value="5" label="Doses per check" />
       </div>
     </section>
   );

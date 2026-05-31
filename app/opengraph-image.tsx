@@ -110,8 +110,8 @@ export default async function OpenGraphImage() {
         >
           <Stat label="VAERS reports" value="889K+" />
           <Stat label="States" value="56" />
-          <Stat label="Trackers" value="0" />
-          <Stat label="On-device" value="100%" />
+          <Stat label="Years" value="2020-25" />
+          <Stat label="Doses / check" value="5" />
         </div>
       </div>
     ),
