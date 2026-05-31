@@ -192,11 +192,15 @@ function ExactRecordItem({ record }: { record: VaersRecord }) {
             <Field label="Vaccinated" value={formatLongDate(record.vaxDate)} />
             <Field label="State" value={record.state} />
             <Field label="Age at dose" value={`${record.ageYears}`} />
-            <Field
-              label="Days to onset"
-              value={record.numDays != null ? String(record.numDays) : "—"}
-            />
-            <Field label="Report received" value={formatLongDate(record.recvDate)} />
+            {record.numDays != null ? (
+              <Field label="Days to onset" value={String(record.numDays)} />
+            ) : null}
+            {record.recvDate ? (
+              <Field
+                label="Report received"
+                value={formatLongDate(record.recvDate)}
+              />
+            ) : null}
           </dl>
           <div className="mt-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

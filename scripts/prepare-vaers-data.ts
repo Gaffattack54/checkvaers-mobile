@@ -44,6 +44,24 @@ interface Args {
   yearEnd: number;
 }
 
+/**
+ * Minimal output shape — sized to fit in mobile-browser memory budgets.
+ *
+ * iOS Safari caps tab memory at ~200–400 MB. The matcher only needs
+ * state/sex/ageYears/vaxDate; the rest is for display in the result
+ * card. The original full shape (with `symptomText`, `recvDate`,
+ * `numDays`, and a 5-string `symptoms` array) blew through this on
+ * 889k records — JSON.parse + the object graph peaked north of 1 GB
+ * and the tab got force-killed.
+ *
+ * Dropped (vs. v0.1.0):
+ *   - symptomText : 200-char narrative. CDC WONDER has the full text by
+ *                    VAERS_ID — we link out to it from the result card.
+ *   - recvDate    : report-received date. Rarely surfaces meaningfully.
+ *   - numDays     : days-to-onset. Same.
+ *   - symptoms[]  : trimmed from 5 entries to 3 (still shows the
+ *                    matcher's strongest signal).
+ */
 interface OutputRecord {
   vaersId: string;
   state: string;
@@ -51,10 +69,7 @@ interface OutputRecord {
   ageYears: number;
   vaxDate: string;
   vaxManu: string;
-  symptoms: string[];
-  symptomText: string;
-  recvDate: string;
-  numDays: number | null;
+  symptoms: string[]; // capped at 3
 }
 
 interface OutputFile {
@@ -295,12 +310,7 @@ async function main() {
         ageYears: Math.round(ageYears),
         vaxDate,
         vaxManu: vax.vaxManu,
-        symptoms: symptomsById.get(d.VAERS_ID) ?? [],
-        symptomText: truncateNarrative(d.SYMPTOM_TEXT ?? ""),
-        recvDate: toIsoDate(d.RECVDATE),
-        numDays: Number.isFinite(Number(d.NUMDAYS))
-          ? Number(d.NUMDAYS)
-          : null,
+        symptoms: (symptomsById.get(d.VAERS_ID) ?? []).slice(0, 3),
       });
       yearCount++;
     });
