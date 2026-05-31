@@ -8,6 +8,9 @@ import { useCheckDraft } from "@/lib/state/check-store";
 import { Input } from "@/components/ui/input";
 import { StepHeader, CHECK_FLOW_STEPS } from "@/components/check-flow/step-header";
 import { cn } from "@/lib/utils";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 export default function StateStepPage() {
   const router = useRouter();
@@ -31,7 +34,7 @@ export default function StateStepPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col px-6 pb-32">
+    <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pb-32"}>
       <StepHeader
         step={0}
         total={CHECK_FLOW_STEPS}

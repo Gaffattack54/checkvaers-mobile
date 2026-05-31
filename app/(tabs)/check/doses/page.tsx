@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { doseDatesSchema } from "@/lib/validation/schemas";
 import { todayIso } from "@/lib/vaers/dates";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 const MAX_DOSES = 5;
 
@@ -55,7 +58,7 @@ export default function DosesStepPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col px-6 pb-32">
+    <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pb-32"}>
       <StepHeader
         step={3}
         total={CHECK_FLOW_STEPS}

@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import { checkDraftSchema } from "@/lib/validation/schemas";
 import { findStateByCode } from "@/lib/vaers/us-states";
 import { ageInYears, formatLongDate } from "@/lib/vaers/dates";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 const SEX_LABELS = { F: "Female", M: "Male", U: "Prefer not to say" } as const;
 
@@ -34,7 +37,7 @@ export default function ReviewStepPage() {
   const age = parsed ? ageInYears(parsed.dob) : null;
 
   return (
-    <div className="flex flex-1 flex-col px-6 pb-32">
+    <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pb-32"}>
       <StepHeader
         step={4}
         total={CHECK_FLOW_STEPS}

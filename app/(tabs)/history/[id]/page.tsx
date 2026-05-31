@@ -10,6 +10,9 @@ import { formatLongDate } from "@/lib/vaers/dates";
 import { ExactMatchCard } from "@/components/result-cards/exact-match-card";
 import { PotentialMatchesList } from "@/components/result-cards/potential-matches-list";
 import { NoMatchCard } from "@/components/result-cards/no-match-card";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 const SEX_LABELS = { F: "Female", M: "Male", U: "Prefer not to say" } as const;
 
@@ -42,7 +45,7 @@ export default function HistoryDetailPage() {
 
   if (item === "missing") {
     return (
-      <div className="flex flex-1 flex-col px-6 pt-12 pb-32">
+      <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pt-12 pb-32"}>
         <h1 className="text-2xl font-black text-brand-navy">Check not found</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           That history entry isn&apos;t on this device.
@@ -75,7 +78,7 @@ export default function HistoryDetailPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col px-6 pt-4 pb-32">
+    <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pt-4 pb-32"}>
       <header>
         <button
           type="button"

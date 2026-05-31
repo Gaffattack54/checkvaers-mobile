@@ -10,6 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Sex } from "@/lib/vaers/types";
+import { VARIANT } from "@/lib/site-config";
+
+const isSite = VARIANT === "site";
 
 const OPTIONS: Array<{ value: Sex; label: string }> = [
   { value: "F", label: "Female" },
@@ -28,7 +31,7 @@ export default function SexStepPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col px-6 pb-32">
+    <div className={isSite ? "flex flex-1 flex-col px-2 py-2 md:px-0 md:py-4" : "flex flex-1 flex-col px-6 pb-32"}>
       <StepHeader
         step={1}
         total={CHECK_FLOW_STEPS}
