@@ -11,7 +11,7 @@ Run:  python scripts/generate-brief-pdf.py
 from __future__ import annotations
 
 from pathlib import Path
-from PIL import Image as PILImage
+from PIL import Image as PILImage, ImageDraw, ImageFilter
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -98,36 +98,86 @@ def img_dims(path: Path) -> tuple[int, int]:
         return im.size  # (w, h)
 
 
+# ---- screenshot post-processor --------------------------------- #
+
+PROCESSED_DIR = Path("brief-shots/processed")
+PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def process_screenshot(
+    path: Path,
+    *,
+    is_iphone: bool = False,
+    corner_radius_pct: float = 0.025,  # of min(w, h)
+    shadow_opacity: int = 70,
+    shadow_blur: int = 36,
+    shadow_dy: int = 14,
+    padding: int = 60,
+) -> Path:
+    """Process a screenshot for embedding: crop iOS chrome if asked,
+    apply rounded corners and a soft drop shadow on a white canvas.
+    Cached — subsequent calls with the same source return the cached
+    output."""
+    out = PROCESSED_DIR / path.name
+    if out.exists() and out.stat().st_mtime >= path.stat().st_mtime:
+        return out
+
+    img = PILImage.open(path).convert("RGBA")
+    w, h = img.size
+
+    # iPhone 14 screenshot: 1170 × 2532 with iOS status bar at top and
+    # the Safari URL/toolbar at bottom. Trim both so only the page
+    # content remains.
+    if is_iphone and (w, h) == (1170, 2532):
+        img = img.crop((0, 170, 1170, 2532 - 440))
+        w, h = img.size
+
+    # Rounded corner mask.
+    radius = max(12, int(min(w, h) * corner_radius_pct))
+    mask = PILImage.new("L", (w, h), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, w, h), radius, fill=255)
+    img.putalpha(mask)
+
+    # Build a white canvas big enough for the shadow.
+    canvas_w = w + padding * 2
+    canvas_h = h + padding * 2
+    canvas = PILImage.new("RGBA", (canvas_w, canvas_h), (255, 255, 255, 255))
+
+    # Shadow: solid dark layer matching the rounded mask, then blurred.
+    shadow_layer = PILImage.new("RGBA", (canvas_w, canvas_h), (255, 255, 255, 0))
+    shadow_solid = PILImage.new("RGBA", (w, h), (0, 0, 0, shadow_opacity))
+    # Apply the rounded mask to the shadow as well.
+    shadow_solid.putalpha(
+        PILImage.eval(mask, lambda v: int(v * shadow_opacity / 255))
+    )
+    shadow_layer.paste(shadow_solid, (padding, padding + shadow_dy), shadow_solid)
+    shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(shadow_blur))
+    canvas.alpha_composite(shadow_layer)
+
+    # The screenshot, on top of the shadow.
+    canvas.alpha_composite(img, dest=(padding, padding))
+
+    # Flatten onto pure white so reportlab handles it cleanly.
+    final = PILImage.new("RGB", canvas.size, (255, 255, 255))
+    final.paste(canvas, mask=canvas.split()[3])
+    final.save(out, "PNG", optimize=True)
+    return out
+
+
 def fit_image(
     path: Path,
     *,
     max_w: float,
     max_h: float | None = None,
-    border: bool = True,
-) -> Table | Image:
-    """Scale an image to fit max_w × max_h, return a Platypus flowable.
-    Optionally wrap in a 1-cell table with a thin border + soft shadow."""
+) -> Image:
+    """Scale an image to fit max_w × max_h. Expects the source to be
+    pre-processed (rounded + shadow + white background)."""
     w, h = img_dims(path)
     scale = max_w / w
     if max_h is not None:
         scale = min(scale, max_h / h)
     out_w, out_h = w * scale, h * scale
-    img = Image(str(path), width=out_w, height=out_h)
-    if not border:
-        return img
-    t = Table([[img]], colWidths=[out_w], rowHeights=[out_h], hAlign="LEFT")
-    t.setStyle(
-        TableStyle(
-            [
-                ("BOX", (0, 0), (-1, -1), 0.5, RULE),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ]
-        )
-    )
-    return t
+    return Image(str(path), width=out_w, height=out_h)
 
 
 # -------------------------------------------------------------- #
@@ -431,12 +481,56 @@ def image_with_caption(
     *,
     max_w: float | None = None,
     max_h: float | None = None,
+    is_iphone: bool = False,
 ) -> list:
     if max_w is None:
         max_w = CONTENT_W
-    flow = [fit_image(image_path, max_w=max_w, max_h=max_h)]
+    processed = process_screenshot(image_path, is_iphone=is_iphone)
+    flow = [fit_image(processed, max_w=max_w, max_h=max_h)]
     flow.append(Paragraph(caption, STY_CAPTION))
     return flow
+
+
+def _grid_images(
+    paths_with_meta: list[tuple[Path, bool]],
+    *,
+    captions: list[str] | None = None,
+    gap: float = 0.18 * inch,
+) -> list:
+    """N-up image grid. paths_with_meta is list of (path, is_iphone)."""
+    n = len(paths_with_meta)
+    cell_w = (CONTENT_W - (n - 1) * gap) / n
+    cells = []
+    for p, is_iphone in paths_with_meta:
+        proc = process_screenshot(p, is_iphone=is_iphone)
+        w, h = img_dims(proc)
+        scale = cell_w / w
+        cells.append(Image(str(proc), width=w * scale, height=h * scale))
+    col_widths = [cell_w + 1] * n
+    t = Table([cells], colWidths=col_widths, hAlign="LEFT")
+    cmds = [
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+    ]
+    for i in range(1, n):
+        cmds.append(("LEFTPADDING", (i, 0), (i, 0), gap))
+    t.setStyle(TableStyle(cmds))
+    out = [t]
+    if captions:
+        cap_cells = [[Paragraph(c, STY_CAPTION) for c in captions]]
+        ct = Table(cap_cells, colWidths=col_widths, hAlign="LEFT")
+        ccmds = [
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ]
+        for i in range(1, n):
+            ccmds.append(("LEFTPADDING", (i, 0), (i, 0), gap))
+        ct.setStyle(TableStyle(ccmds))
+        out.append(ct)
+    return out
 
 
 def side_by_side_images(
@@ -445,102 +539,37 @@ def side_by_side_images(
     *,
     left_caption: str = "",
     right_caption: str = "",
-    gap: float = 0.2 * inch,
+    left_iphone: bool = False,
+    right_iphone: bool = False,
+    gap: float = 0.25 * inch,
 ) -> list:
-    """Two images side-by-side, scaled to fit half-width each."""
-    half_w = (CONTENT_W - gap) / 2
-    l_w, l_h = img_dims(left)
-    r_w, r_h = img_dims(right)
-    l_scale = half_w / l_w
-    r_scale = half_w / r_w
-    l_img = Image(str(left), width=l_w * l_scale, height=l_h * l_scale)
-    r_img = Image(str(right), width=r_w * r_scale, height=r_h * r_scale)
-    t = Table(
-        [[l_img, r_img]],
-        colWidths=[half_w + 1, half_w + 1],
-        hAlign="LEFT",
+    captions = [left_caption, right_caption] if (left_caption or right_caption) else None
+    return _grid_images(
+        [(left, left_iphone), (right, right_iphone)],
+        captions=captions,
+        gap=gap,
     )
-    t.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("LEFTPADDING", (1, 0), (1, 0), gap),
-                ("BOX", (0, 0), (0, 0), 0.5, RULE),
-                ("BOX", (1, 0), (1, 0), 0.5, RULE),
-            ]
-        )
-    )
-    out = [t]
-    if left_caption or right_caption:
-        cap = Table(
-            [[Paragraph(left_caption, STY_CAPTION), Paragraph(right_caption, STY_CAPTION)]],
-            colWidths=[half_w + 1, half_w + 1],
-            hAlign="LEFT",
-        )
-        cap.setStyle(
-            TableStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                    ("LEFTPADDING", (1, 0), (1, 0), gap),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ]
-            )
-        )
-        out.append(cap)
-    return out
 
 
 def three_phone_row(
     paths: list[Path], *, captions: list[str] | None = None
 ) -> list:
-    """Three phone-portrait images side by side."""
-    gap = 0.18 * inch
-    third = (CONTENT_W - 2 * gap) / 3
-    cells = []
-    h_max = 0
-    for p in paths:
-        w, h = img_dims(p)
-        scale = third / w
-        new_w = w * scale
-        new_h = h * scale
-        h_max = max(h_max, new_h)
-        cells.append(Image(str(p), width=new_w, height=new_h))
-    t = Table([cells], colWidths=[third + 1, third + 1, third + 1], hAlign="LEFT")
-    cmds = [
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("LEFTPADDING", (1, 0), (1, 0), gap),
-        ("LEFTPADDING", (2, 0), (2, 0), gap),
-        ("BOX", (0, 0), (0, 0), 0.5, RULE),
-        ("BOX", (1, 0), (1, 0), 0.5, RULE),
-        ("BOX", (2, 0), (2, 0), 0.5, RULE),
-    ]
-    t.setStyle(TableStyle(cmds))
-    out = [t]
-    if captions:
-        cap_cells = [[Paragraph(c, STY_CAPTION) for c in captions]]
-        ct = Table(
-            cap_cells, colWidths=[third + 1, third + 1, third + 1], hAlign="LEFT"
-        )
-        ct.setStyle(
-            TableStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                    ("LEFTPADDING", (1, 0), (1, 0), gap),
-                    ("LEFTPADDING", (2, 0), (2, 0), gap),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ]
-            )
-        )
-        out.append(ct)
-    return out
+    """Three user-supplied iPhone screenshots in a 3-up grid."""
+    return _grid_images(
+        [(p, True) for p in paths],
+        captions=captions,
+    )
+
+
+def two_phone_row(
+    paths: list[Path], *, captions: list[str] | None = None
+) -> list:
+    """Two iPhone screenshots side-by-side — larger and clearer than 3-up."""
+    return _grid_images(
+        [(p, True) for p in paths],
+        captions=captions,
+        gap=0.4 * inch,
+    )
 
 
 # -------------------------------------------------------------- #
