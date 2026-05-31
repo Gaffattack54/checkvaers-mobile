@@ -81,12 +81,20 @@ function PotentialItem({ record }: { record: VaersRecord }) {
             <p className="mt-3 text-brand-navy">{record.symptomText}</p>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span>
-              Reported {formatLongDate(record.recvDate)}
-            </span>
+            {record.recvDate ? (
+              <span>Reported {formatLongDate(record.recvDate)}</span>
+            ) : null}
             {record.numDays != null ? (
               <span>{record.numDays} day{record.numDays === 1 ? "" : "s"} to onset</span>
             ) : null}
+            <a
+              href="https://wonder.cdc.gov/vaers.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              Full report on CDC WONDER
+            </a>
           </div>
         </div>
       ) : null}
