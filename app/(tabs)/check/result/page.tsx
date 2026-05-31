@@ -155,6 +155,17 @@ export default function ResultPage() {
         reports ({dataset.yearStart}–{dataset.yearEnd}). Nothing left your
         device.
       </p>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        Dataset generated{" "}
+        {new Date(dataset.generatedAt).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })}
+        {dataset.source === "cache" ? " · loaded from cache" : null}
+        {dataset.source === "network" ? " · just downloaded" : null}
+        {dataset.source === "mock" ? " · bundled sample" : null}
+      </p>
 
       {note ? (
         <div className="mt-3 flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-xs text-destructive">

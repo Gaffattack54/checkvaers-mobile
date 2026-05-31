@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { findMatches, POTENTIAL_MATCH_LIMIT } from "../matcher";
+import {
+  findMatches,
+  findMatchesIndexed,
+  indexByState,
+  POTENTIAL_MATCH_LIMIT,
+} from "../matcher";
 import type { VaersRecord } from "../types";
 import { MOCK_VAERS_RECORDS } from "../mock-data";
 
@@ -272,6 +277,75 @@ describe("findMatches — no match", () => {
       records
     );
     expect(result.none).toBe(true);
+  });
+});
+
+describe("indexByState + findMatchesIndexed", () => {
+  it("buckets records by 2-letter state", () => {
+    const records = [
+      rec({ vaersId: "a", state: "CA" }),
+      rec({ vaersId: "b", state: "CA" }),
+      rec({ vaersId: "c", state: "TX" }),
+    ];
+    const index = indexByState(records);
+    expect(index.get("CA")?.map((r) => r.vaersId).sort()).toEqual(["a", "b"]);
+    expect(index.get("TX")?.map((r) => r.vaersId)).toEqual(["c"]);
+    expect(index.get("WY")).toBeUndefined();
+  });
+
+  it("produces identical results to findMatches for any input", () => {
+    const input = {
+      state: "CA",
+      sex: "F" as const,
+      ageYears: 40,
+      vaccineDates: [localDate(2022, 6, 1)],
+    };
+    const records = [
+      rec({ vaersId: "1", state: "CA", ageYears: 40, vaxDate: "2022-06-01" }),
+      rec({ vaersId: "2", state: "CA", ageYears: 42, vaxDate: "2022-06-15" }),
+      rec({ vaersId: "3", state: "TX", ageYears: 40, vaxDate: "2022-06-01" }),
+      rec({ vaersId: "4", state: "CA", ageYears: 40, sex: "M", vaxDate: "2022-06-01" }),
+    ];
+    const direct = findMatches(input, records);
+    const indexed = findMatchesIndexed(input, indexByState(records));
+    expect(indexed.exact.map((r) => r.vaersId)).toEqual(
+      direct.exact.map((r) => r.vaersId)
+    );
+    expect(indexed.potential.map((r) => r.vaersId)).toEqual(
+      direct.potential.map((r) => r.vaersId)
+    );
+    expect(indexed.none).toBe(direct.none);
+  });
+
+  it("returns none when the user's state has no records", () => {
+    const records = [rec({ state: "CA" })];
+    const result = findMatchesIndexed(
+      {
+        state: "WY",
+        sex: "F",
+        ageYears: 40,
+        vaccineDates: [localDate(2022, 6, 1)],
+      },
+      indexByState(records)
+    );
+    expect(result.none).toBe(true);
+  });
+
+  it("returns the same Cluster A matches as the non-indexed version on the mock dataset", () => {
+    const input = {
+      state: "CA",
+      sex: "F" as const,
+      ageYears: 45,
+      vaccineDates: [localDate(2021, 3, 11)],
+    };
+    const direct = findMatches(input, MOCK_VAERS_RECORDS);
+    const indexed = findMatchesIndexed(
+      input,
+      indexByState(MOCK_VAERS_RECORDS)
+    );
+    expect(indexed.exact.map((r) => r.vaersId).sort()).toEqual(
+      direct.exact.map((r) => r.vaersId).sort()
+    );
   });
 });
 

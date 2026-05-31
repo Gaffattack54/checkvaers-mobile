@@ -51,10 +51,13 @@ export default function HomePage() {
         <p className="text-balance px-2 text-center text-xs text-muted-foreground">
           Not a medical diagnostic tool. Consult a healthcare provider for
           medical advice.{" "}
+          <Link href="/about" className="underline underline-offset-2">
+            About
+          </Link>
+          {" · "}
           <Link href="/privacy" className="underline underline-offset-2">
             Privacy
           </Link>
-          .
         </p>
       </div>
     </main>

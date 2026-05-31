@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/learn",
     "/report",
     "/history",
+    "/about",
     "/privacy",
   ];
   return staticPaths.map((path) => ({
