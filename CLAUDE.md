@@ -178,6 +178,42 @@ Repo wrappers (`checksRepo`, `reportRepo`, `dataCacheRepo`) live in
   banner on the Check tab; stores ack in `localStorage`.
 - `prefers-reduced-motion` honored globally in `app/globals.css`.
 
+## Two deployments from one codebase (post-MVP, optimization phase)
+
+The repo now powers **two Vercel projects** off the same `main` branch:
+
+| | Vercel project | URL | Variant flag |
+|---|---|---|---|
+| **App** | `check-vaers` | <https://check-vaers.vercel.app> | `NEXT_PUBLIC_VARIANT` unset (default) |
+| **Site** | `checkvaers-site` | <https://checkvaers-site.vercel.app> | `NEXT_PUBLIC_VARIANT=site` |
+
+`lib/site-config.ts → VARIANT` reads the env var. `app/page.tsx` branches:
+- `VARIANT === "site"` → `<MarketingLanding/>` (rich, desktop-first responsive,
+  components in `components/marketing/`)
+- otherwise → `<AppLanding/>` (minimal, mobile-first, the original `/`)
+
+All other routes (`/check`, `/learn`, `/report`, `/history`, `/about`,
+`/privacy`) are identical across variants. One push to `main` deploys
+both.
+
+When iterating: `.vercel/` in this working tree links to the **app**
+project. To deploy the site project from CLI, temporarily move
+`.vercel/` aside and re-link to `checkvaers-site` (or just push to
+`main` — both auto-deploy).
+
+## CORS proxy for the VAERS data file (post-Step 10)
+
+GitHub Release assets don't expose Access-Control-Allow-Origin. A direct
+browser fetch from check-vaers.vercel.app to the release asset → blocked.
+
+Fixed by `app/api/vaers-data/route.ts` — a dynamic API route that
+server-side fetches `VAERS_DATA_SOURCE_URL`, follows redirects, and
+streams the body back same-origin with `Cache-Control: max-age=86400`.
+Vercel's CDN caches between revalidations.
+
+Client points at `/api/vaers-data` (via `NEXT_PUBLIC_VAERS_DATA_URL`).
+Both Vercel projects use this same setup.
+
 ## Cross-device notes
 
 This repo is on two machines, both using Claude Code. A few things to know:
