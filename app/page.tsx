@@ -7,6 +7,12 @@ export default function HomePage() {
     <main className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-6 pt-safe pb-safe">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-hex-pattern bg-repeat opacity-[0.04]" />
 
+      {/* TEMP DEBUG: prints the resolved data URL at build time. Remove once verified. */}
+      <pre
+        data-debug-vaers-url
+        className="hidden"
+      >{`url=${process.env.NEXT_PUBLIC_VAERS_DATA_URL ?? "<undefined>"}`}</pre>
+
       <header className="flex flex-col items-center pt-12 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-cyan/10 text-brand-cyan">
           <ShieldCheck className="h-9 w-9" aria-hidden="true" />
